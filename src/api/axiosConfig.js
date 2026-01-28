@@ -108,16 +108,23 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 30000, // 30 seconds
+  // withCredentials: true, 
 });
 
 // Request interceptor - Send cookies with every request
 apiClient.interceptors.request.use(
   (config) => {
-    // The browser will automatically include cookies for same-origin requests
-    // But if you need to explicitly send credentials for cross-origin requests, 
-    // you can add credentials: 'include' to the request config here
-    config.withCredentials = true;  // Ensures cookies are sent with cross-origin requests
 
+    const token = localStorage.getItem('auth-token');
+    
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('🔑 Token added:', token.substring(0, 20) + '...');
+    } else {
+      console.log('⚠️ No token found in localStorage');
+    }
+    
+    console.log('📤 Request URL:', config.url);
     return config;
   },
   (error) => {

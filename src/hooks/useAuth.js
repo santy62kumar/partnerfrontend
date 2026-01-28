@@ -170,6 +170,7 @@ export const useAuth = () => {
   const login = async (phoneNumber) => {
     try {
       const response = await authApi.login(phoneNumber);
+      console.log("Login Response:", response);
       setPhoneNumber(phoneNumber);
       toast.success('OTP sent successfully!');
       navigate('/verify-otp');
@@ -185,6 +186,17 @@ export const useAuth = () => {
   const verifyOtp = useCallback(async (otp) => {
     try {
       const response = await authApi.verifyOtp(phoneNumber, otp);
+      // console.log("OTP Verification Response:", response.token);
+      const token = response.token;
+      // console.log('OTP Verification data:', response.data);
+
+    if (token) {
+      // ✅ Save to localStorage
+      localStorage.setItem('auth-token', token);
+      console.log('✅ Token saved to localStorage');
+    } else {
+      console.error('⚠️ No token found in response:', response.data);
+    }
       
       // Set token and user data
       // setToken(response.access_token);
