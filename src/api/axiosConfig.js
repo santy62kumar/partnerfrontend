@@ -125,6 +125,7 @@ apiClient.interceptors.request.use(
     }
     
     console.log('📤 Request URL:', config.url);
+    console.log('📋 Request Headers:', config.headers);
     return config;
   },
   (error) => {
