@@ -182,56 +182,7 @@ export const useAuth = () => {
     }
   };
 
-  // Verify OTP - FIXED VERSION
-  // const verifyOtp = useCallback(async (otp) => {
-  //   try {
-  //     const response = await authApi.verifyOtp(phoneNumber, otp);
-      
-  //     const token = response.token;
-      
-
-  //   if (token) {
-  //     // ✅ Save to localStorage
-  //     localStorage.setItem('auth-token', token);
-  //     console.log('✅ Token saved to localStorage');
-  //   } else {
-  //     console.error('⚠️ No token found in response:', response);
-  //   }
-      
-  //     // Set token and user data
-  //     // setToken(response.access_token);
-  //     setUser(response.user);
-      
-  //     toast.success('Login successful!');
-      
-  //     // DON'T fetch verification status here - let PrivateRoute handle it
-  //     // Just navigate and let the route protection do its job
-      
-  //     // Check if user data already has verification flags
-  //     if (response.user) {
-  //       const isFullyVerified = 
-  //         response.user.is_verified === true &&
-  //         response.user.is_pan_verified === true &&
-  //         response.user.is_bank_details_verified === true;
-        
-  //       if (isFullyVerified) {
-  //         navigate('/dashboard', { replace: true });
-  //       } else {
-  //         navigate('/verification', { replace: true });
-  //       }
-  //     } else {
-  //       // Fallback: navigate to verification
-  //       navigate('/verification', { replace: true });
-  //     }
-      
-  //     return { success: true, data: response };
-  //   } catch (error) {
-  //     const message = error.message || 'OTP verification failed';
-  //     toast.error(message);
-  //     return { success: false, error: message };
-  //   }
-  // }, [phoneNumber, setUser, navigate]);
-
+ 
 
   const verifyOtp = useCallback(async (otp) => {
     try {

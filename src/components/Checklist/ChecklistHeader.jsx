@@ -3,11 +3,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
-/**
- * Checklist Header Component
- * 
- * Displays job title, checklist name, and navigation
- */
+
 
 const ChecklistHeader = ({ jobTitle, checklistName, checklistDescription }) => {
   const navigate = useNavigate();
@@ -27,11 +23,6 @@ const ChecklistHeader = ({ jobTitle, checklistName, checklistDescription }) => {
         <span>Back to Job</span>
       </button>
 
-      {/* Job Title */}
-      <div className="mb-2">
-        <p className="text-sm text-gray-500 uppercase tracking-wide">Job</p>
-        <h1 className="text-2xl font-bold text-gray-900">{jobTitle}</h1>
-      </div>
 
       {/* Checklist Name */}
       <div className="mt-4">

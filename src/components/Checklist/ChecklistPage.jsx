@@ -32,7 +32,9 @@ const ChecklistPage = () => {
   
   // Actions
   const fetchChecklist = useChecklistStore(state => state.fetchChecklist);
+  // console.log('ChecklistPage - fetchChecklist:', fetchChecklist);
   const resetStore = useChecklistStore(state => state.resetStore);
+  // console.log('ChecklistPage - resetStore:', resetStore);
 
   // Load checklist data on mount
   useEffect(() => {
@@ -73,7 +75,7 @@ const ChecklistPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Unsaved changes notification bar */}
+      
       <UnsavedChangesBar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -42,7 +42,7 @@ export const checklistApi = {
    */
   batchUpdate: async (jobId, checklistId, payload) => {
     const response = await apiClient.post(
-      `/dashboard/jobs/${jobId}/checklist/${checklistId}/update`,
+      `/dashboard/jobs/${jobId}/checklist/${checklistId}/batch-update`,
       payload
     );
     return response.data;

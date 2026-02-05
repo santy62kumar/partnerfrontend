@@ -21,6 +21,7 @@ import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
  */
 
 const ChecklistItem = ({ item }) => {
+  // console.log('Rendering ChecklistItem - item:', item);
   const [isEditingComment, setIsEditingComment] = useState(false);
   const [commentValue, setCommentValue] = useState(item.comment || '');
   const fileInputRef = useRef(null);
@@ -33,17 +34,17 @@ const ChecklistItem = ({ item }) => {
 
   // Status styling
   const statusConfig = {
-    update: {
-      label: 'Update',
-      className: 'bg-[#3D1D1C]/10 text-[#3D1D1C]',
-    },
     pending: {
       label: 'Pending',
+      className: 'bg-[#3D1D1C]/10 text-[#3D1D1C]',
+    },
+    checked: {
+      label: 'Under Review',
       className: 'bg-yellow-100 text-yellow-800',
     },
-    approved: {
+    is_approved: {
       label: 'Approved',
-      className: 'bg-[#3D1D1C]/10 text-[#3D1D1C]',
+      className: 'bg-green-100 text-green-800',
     },
 
   };
@@ -87,7 +88,16 @@ const ChecklistItem = ({ item }) => {
     }
   };
 
-  const currentStatus = statusConfig[item.status] || statusConfig.update;
+
+  const getStatusKey = (item) => {
+  if (item.is_approved) return 'is_approved';
+  if (item.checked) return 'checked';
+  return 'pending';
+};
+
+const currentStatus = statusConfig[getStatusKey(item)];
+
+  // const currentStatus = statusConfig[item.is_approved ? 'is_approved' : 'pending'];
 
   return (
     <div className="px-6 py-4 hover:bg-gray-50 transition-colors">
@@ -127,22 +137,7 @@ const ChecklistItem = ({ item }) => {
 
           {/* Status Selector & Document */}
           <div className="flex items-center space-x-4 mb-3">
-            {/* Status Dropdown */}
-            <div className="flex items-center space-x-2">
-              <label htmlFor={`status-${item.id}`} className="text-xs text-gray-500">
-                Status:
-              </label>
-              <select
-                id={`status-${item.id}`}
-                value={item.status}
-                onChange={handleStatusChange}
-                className="text-xs border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-[#3D1D1C]/50 focus:border-transparent"
-              >
-                <option value="update">Update</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-              </select>
-            </div>
+            
 
             {/* Document Link */}
             {item.document_link && (
@@ -224,9 +219,9 @@ const ChecklistItem = ({ item }) => {
           </div>
 
           {/* Timestamp */}
-          <div className="mt-2 text-xs text-gray-400">
+          {/* <div className="mt-2 text-xs text-gray-400">
             Created: {new Date(item.created_at).toLocaleDateString()}
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

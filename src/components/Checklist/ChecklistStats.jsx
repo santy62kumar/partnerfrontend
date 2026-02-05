@@ -16,6 +16,7 @@ import {
 
 const ChecklistStats = () => {
   const stats = useChecklistStore(state => state.stats);
+  console.log('ChecklistStats - stats:', stats);
 
   const statCards = [
     {
@@ -33,7 +34,7 @@ const ChecklistStats = () => {
       bgColor: 'bg-[#3D1D1C]/10',
     },
     {
-      label: 'Pending',
+      label: 'Under Review',
       value: stats.pendingCount,
       icon: ClockIcon,
       color: 'text-yellow-600',
@@ -65,7 +66,7 @@ const ChecklistStats = () => {
           ></div>
         </div>
         <p className="text-xs text-gray-500 mt-2">
-          {stats.checkedCount} of {stats.totalItems} items completed
+          {stats.approvedCount} of {stats.totalItems} items completed
         </p>
       </div>
 

@@ -55,6 +55,7 @@ const useChecklistStore = create(
         
         try {
           const data = await checklistApi.getChecklist(jobId, checklistId);
+          console.log('Fetched checklist data:', data);
           
           set({
             checklist: data.checklist,
@@ -124,52 +125,60 @@ const useChecklistStore = create(
       /**
        * Save all pending changes (batch update)
        */
-      saveChanges: async () => {
-        const { jobId, checklist, pendingChanges, itemsBackup } = get();
-        
-        if (pendingChanges.size === 0) {
-          return; // Nothing to save
-        }
-        
-        set({ isSaving: true, error: null });
-        
-        // Build batch update payload
-        const updates = Array.from(pendingChanges.entries()).map(([id, changes]) => ({
-          id,
-          ...changes,
-        }));
-        
-        try {
-          const response = await checklistApi.batchUpdate(
-            jobId,
-            checklist.id,
-            { updates }
-          );
-          
-          // Sync with server response
-          set({
-            items: response.items,
-            stats: calculateStats(response.items),
-            dirtyItems: new Set(),
-            pendingChanges: new Map(),
-            itemsBackup: [],
-            isSaving: false,
-          });
-          
-          return response;
-        } catch (error) {
-          // Rollback on error
-          set({
-            items: itemsBackup,
-            stats: calculateStats(itemsBackup),
-            dirtyItems: new Set(),
-            pendingChanges: new Map(),
-            error: error.response?.data?.detail || 'Failed to save changes',
-            isSaving: false,
-          });
-          throw error;
-        }
+//       /**
+
+saveChanges: async () => {
+  const { jobId, checklist, pendingChanges, items, itemsBackup } = get();
+  
+  if (pendingChanges.size === 0) {
+    return;
+  }
+  
+  set({ isSaving: true, error: null });
+  
+  const updates = Array.from(pendingChanges.entries()).map(([id, changes]) => ({
+    checklist_item_id: id,
+    ...changes,
+  }));
+  
+  try {
+    const response = await checklistApi.batchUpdate(
+      jobId,
+      checklist.id,
+      { updates }
+    );
+    
+    // ✅ Keep optimistic items, just update stats from server
+    set({
+      items: items,  // Keep current items (already updated optimistically)
+      stats: {
+        totalItems: response.total_items,
+        checkedCount: response.checked_count,
+        pendingCount: response.pending_count,
+        approvedCount: response.approved_count,
+        completionPercentage: response.completion_percentage
       },
+      dirtyItems: new Set(),
+      pendingChanges: new Map(),
+      itemsBackup: [],
+      isSaving: false,
+    });
+    
+    return response;
+  } catch (error) {
+    // Rollback on error
+    set({
+      items: itemsBackup,
+      stats: calculateStats(itemsBackup),
+      dirtyItems: new Set(),
+      pendingChanges: new Map(),
+      error: error.response?.data?.detail || 'Failed to save changes',
+      isSaving: false,
+    });
+    throw error;
+  }
+},
+
       
       /**
        * Discard all pending changes
@@ -311,6 +320,9 @@ const useChecklistStore = create(
 /**
  * Calculate statistics from items array
  */
+/**
+ * Calculate statistics from items array
+ */
 function calculateStats(items) {
   const total = items.length;
   
@@ -325,10 +337,10 @@ function calculateStats(items) {
   }
   
   const checked = items.filter(item => item.checked).length;
-  const pending = items.filter(item => item.status === 'pending').length;
-  const approved = items.filter(item => item.status === 'approved').length;
+  const pending = items.filter(item => item.checked && !item.is_approved).length;  // ✅ Fixed: pending = checked but not approved
+  const approved = items.filter(item => item.is_approved).length;  // ✅ Fixed: use is_approved instead of status
   
-  const completionPercentage = Math.round((checked / total) * 100);
+  const completionPercentage = Math.round((approved / total) * 100);
   
   return {
     totalItems: total,

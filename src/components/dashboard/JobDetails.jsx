@@ -17,21 +17,12 @@ import {
  */
 const JobDetails = ({ job }) => {
   const details = [
-    // {
-    //   label: 'Customer Name',
-    //   value: job.customer_name || 'N/A',
-    //   icon: IoPersonOutline,
-    // },
+    
     {
       label: 'Job Type',
       value: job.type || 'N/A',
       icon: IoReaderOutline,
     },
-    // {
-    //   label: 'Address',
-    //   value: job.address,
-    //   icon: IoLocationOutline,
-    // },
     {
   label: 'Address',
   value: (
@@ -50,11 +41,6 @@ const JobDetails = ({ job }) => {
       value: job.pincode,
       icon: IoLocationOutline,
     },
-    // {
-    //   label: 'City',
-    //   value: job.city,
-    //   icon: IoLocationOutline,
-    // },
     {
       label: 'Size',
       value: job.size || 'N/A',
@@ -121,9 +107,9 @@ const JobDetails = ({ job }) => {
                 <p className="text-xs text-primary-grey-500 mb-1">
                   {detail.label}
                 </p>
-                <p className="text-sm font-medium text-primary-grey-900 truncate">
+                <div  className="text-sm font-medium text-primary-grey-900 truncate">
                   {detail.value}
-                </p>
+                </div>
               </div>
             </div>
           ))}
