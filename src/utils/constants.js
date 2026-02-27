@@ -1,5 +1,8 @@
 // API Base URL
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1/auth';
+const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://adminapi.modula.in';
+
+// Backward compatibility: some envs still point to .../api/v1/auth.
+export const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, '').replace(/\/auth$/, '');
 
 // App Info
 export const APP_NAME = import.meta.env.VITE_APP_NAME || 'Job Management Platform';
@@ -23,8 +26,8 @@ export const JOB_STATUS_LABELS = {
 // Job Status Colors (Tailwind classes)
 export const JOB_STATUS_COLORS = {
   [JOB_STATUS.CREATED]: 'bg-gray-100 text-gray-800',
-  [JOB_STATUS.IN_PROGRESS]: 'bg-[#3D1D1C]/10 text-[#3D1D1C]',
-  [JOB_STATUS.COMPLETED]: 'bg-[#3D1D1C]/10 text-[#3D1D1C]',
+  [JOB_STATUS.IN_PROGRESS]: 'bg-amber-100 text-amber-800',
+  [JOB_STATUS.COMPLETED]: 'bg-emerald-100 text-emerald-800',
   [JOB_STATUS.PAUSED]: 'bg-yellow-100 text-yellow-800',
 };
 

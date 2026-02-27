@@ -2,10 +2,11 @@
 
 /* 🌈 Define custom design tokens using @theme */
 @theme {
+  --color-primary-brand: #3D1D1C;
   --color-primary-black: #000000;
 
   /* Nested “gray” scale */
-  --color-primary-grey-50:  #f9fafb;
+  --color-primary-grey-50: #f9fafb;
   --color-primary-grey-100: #f3f4f6;
   --color-primary-grey-200: #e5e7eb;
   --color-primary-grey-300: #d1d5db;
@@ -17,7 +18,7 @@
   --color-primary-grey-900: #111827;
 
   --color-primary-green: #10b981;
-  --color-primary-red:   #ef4444;
+  --color-primary-red: #ef4444;
 
   /* Fonts */
   --font-montserrat: "Montserrat", sans-serif;
@@ -44,7 +45,12 @@
     @apply bg-gray-100 text-gray-900;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: 'Montserrat', sans-serif;
   }
 
@@ -75,6 +81,7 @@
       opacity: 0;
       transform: translateY(10px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);

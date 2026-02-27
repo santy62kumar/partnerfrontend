@@ -27,9 +27,9 @@ const ProgressUpload = ({ jobId, onUploadSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate that at least one field is filled
-    if (!file && !comment.trim()) {
-      toast.error('Please provide either a file or a comment');
+    // Backend requires a file for progress uploads.
+    if (!file) {
+      toast.error('Please select a file to upload');
       return;
     }
 
@@ -49,7 +49,7 @@ const ProgressUpload = ({ jobId, onUploadSuccess }) => {
       
       // Notify parent component
       if (onUploadSuccess) {
-        onUploadSuccess(response.data);
+        onUploadSuccess(response);
       }
     } catch (err) {
       const message = err.message || 'Failed to upload progress';
@@ -125,7 +125,7 @@ const ProgressUpload = ({ jobId, onUploadSuccess }) => {
           size="lg"
           fullWidth
           loading={uploading}
-          disabled={!file && !comment.trim()}
+          disabled={!file}
         >
           Upload Progress
         </Button>

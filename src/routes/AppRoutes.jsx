@@ -24,7 +24,7 @@ function AppRoutes() {
   useEffect(() => {
     const hydrateSession = async () => {
       try {
-        const res = await apiClient.get('/me', { withCredentials: true });
+        const res = await apiClient.get('/auth/me', { withCredentials: true });
         useAuthStore.getState().setUser(res.data);
       } catch {
         useAuthStore.getState().clearAuth();
