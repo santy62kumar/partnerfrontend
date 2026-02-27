@@ -10,12 +10,12 @@ import { useToast } from '@hooks/useToast';
 const DashboardPage = () => {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
-  
-  const { 
-    stats, 
-    setJobs, 
+
+  const {
+    stats,
+    setJobs,
     setLoading: setStoreLoading,
-    setError 
+    setError
   } = useDashboardStore();
 
   useEffect(() => {
@@ -25,7 +25,7 @@ const DashboardPage = () => {
   const fetchJobs = async () => {
     setLoading(true);
     setStoreLoading(true);
-    
+
     try {
       const response = await dashboardApi.getJobs();
       setJobs(response.jobs || response.data || []);
@@ -51,9 +51,9 @@ const DashboardPage = () => {
     <div className="animate-fadeIn">
       {/* Page Header */}
       <div className="mb-6">
-        {/* <h1 className="text-3xl font-bold font-montserrat text-primary-grey-900 mb-2">
+        <h1 className="text-3xl font-bold font-montserrat text-primary-grey-900 mb-2">
           Dashboard
-        </h1> */}
+        </h1>
         <p className="text-primary-grey-600">
           Manage your jobs and track your progress
         </p>

@@ -3,7 +3,7 @@ import apiClient from './axiosConfig';
 export const authApi = {
   // Register new user
   register: async (userData) => {
-    const response = await apiClient.post('/register', {
+    const response = await apiClient.post('/auth/register', {
       phone_number: userData.phoneNumber,
       first_name: userData.firstName,
       last_name: userData.lastName,
@@ -15,7 +15,7 @@ export const authApi = {
 
   // Login with phone number
   login: async (phoneNumber) => {
-    const response = await apiClient.post('/login', {
+    const response = await apiClient.post('/auth/login', {
       phone_number: phoneNumber,
     });
     return response.data;
@@ -23,7 +23,7 @@ export const authApi = {
 
   // Verify OTP
   verifyOtp: async (phoneNumber, otp) => {
-    const response = await apiClient.post('/verify-otp', {
+    const response = await apiClient.post('/auth/verify-otp', {
       phone_number: phoneNumber,
       otp: otp,
     });
@@ -32,7 +32,7 @@ export const authApi = {
 
   // Resend OTP
   resendOtp: async (phoneNumber) => {
-    const response = await apiClient.post('/resent-otp', {
+    const response = await apiClient.post('/auth/resend-otp', {
       phone_number: phoneNumber,
     });
     return response.data;
@@ -40,7 +40,7 @@ export const authApi = {
 
   // Logout
   logout: async () => {
-    const response = await apiClient.post('/logout');
+    const response = await apiClient.post('/auth/logout');
     return response.data;
   },
 };

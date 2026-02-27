@@ -10,8 +10,6 @@ import { useDashboardStore } from '@store/dashboardStore';
 import { useToast } from '@hooks/useToast';
 import { IoArrowBackOutline } from 'react-icons/io5';
 
-import { checklistApi } from '@api/checklistApi';
-
 const JobDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
