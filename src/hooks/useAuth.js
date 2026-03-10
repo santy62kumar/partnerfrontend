@@ -168,7 +168,6 @@ export const useAuth = () => {
   const login = async (phoneNumber) => {
     try {
       const response = await authApi.login(phoneNumber);
-      console.log("Login Response:", response);
       setPhoneNumber(phoneNumber);
       toast.success('OTP sent successfully!');
       navigate('/verify-otp');

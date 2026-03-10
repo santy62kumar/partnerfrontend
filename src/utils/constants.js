@@ -1,5 +1,5 @@
 // API Base URL
-const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://adminapi.modula.in/api/v1';
+const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://partnerapi.modula.in/api/v1';
 
 // Backward compatibility: some envs still point to .../api/v1/auth.
 export const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, '').replace(/\/auth$/, '');
