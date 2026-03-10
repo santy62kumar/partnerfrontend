@@ -1,18 +1,12 @@
 // components/Checklist/ChecklistStats.jsx
 import React from 'react';
 import useChecklistStore from '../../store/checklistStore';
-import { 
-  CheckCircleIcon, 
-  ClockIcon, 
+import {
+  CheckCircleIcon,
+  ClockIcon,
   CheckBadgeIcon,
-  ChartBarIcon 
+  ChartBarIcon
 } from '@heroicons/react/24/outline';
-
-/**
- * Checklist Statistics Component
- * 
- * Displays aggregate statistics about checklist completion
- */
 
 const ChecklistStats = () => {
   const stats = useChecklistStore(state => state.stats);
@@ -23,49 +17,49 @@ const ChecklistStats = () => {
       label: 'Total Items',
       value: stats.totalItems,
       icon: ChartBarIcon,
-      color: 'text-gray-600',
-      bgColor: 'bg-gray-100',
+      color: 'text-muted-foreground',
+      bgColor: 'bg-secondary',
     },
     {
       label: 'Checked',
       value: stats.checkedCount,
       icon: CheckCircleIcon,
-      color: 'text-[#3D1D1C]',
-      bgColor: 'bg-[#3D1D1C]/10',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10',
     },
     {
       label: 'Under Review',
       value: stats.pendingCount,
       icon: ClockIcon,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-100',
+      color: 'text-warning',
+      bgColor: 'bg-warning/10',
     },
     {
       label: 'Approved',
       value: stats.approvedCount,
       icon: CheckBadgeIcon,
-      color: 'text-[#3D1D1C]',
-      bgColor: 'bg-[#3D1D1C]/10',
+      color: 'text-success',
+      bgColor: 'bg-success/10',
     },
   ];
 
   return (
     <div className="mt-6">
       {/* Progress Bar */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+      <div className="ds-card p-6 mb-6">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-medium text-gray-700">Overall Progress</h3>
-          <span className="text-sm font-semibold text-gray-900">
+          <h3 className="text-sm font-medium text-foreground">Overall Progress</h3>
+          <span className="text-sm font-semibold text-foreground">
             {stats.completionPercentage}%
           </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
+        <div className="w-full bg-secondary rounded-full h-2.5">
           <div
-            className="bg-[#3D1D1C] h-2.5 rounded-full transition-all duration-500"
+            className="bg-primary h-2.5 rounded-full transition-all duration-500"
             style={{ width: `${stats.completionPercentage}%` }}
           ></div>
         </div>
-        <p className="text-xs text-gray-500 mt-2">
+        <p className="text-xs text-muted-foreground mt-2">
           {stats.approvedCount} of {stats.totalItems} items completed
         </p>
       </div>
@@ -75,12 +69,12 @@ const ChecklistStats = () => {
         {statCards.map((stat, index) => (
           <div
             key={index}
-            className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+            className="ds-card p-6 ds-card-hoverable"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">
+                <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
+                <p className="text-2xl font-bold text-foreground mt-2">
                   {stat.value}
                 </p>
               </div>

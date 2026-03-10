@@ -1,70 +1,42 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Button from '@components/common/Button';
 import Loader from '@components/common/Loader';
+import Card from '@components/common/Card';
 import JobDetails from '@components/dashboard/JobDetails';
 import ProgressUpload from '@components/dashboard/ProgressUpload';
 import ProgressTimeline from '@components/dashboard/ProgressTimeline';
-import { dashboardApi } from '@api/dashboardApi';
-import { useDashboardStore } from '@store/dashboardStore';
+import { useJobDetail, useJobProgress } from '@hooks/useQueryHooks';
+import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@hooks/useToast';
+import { formatters } from '@utils/formatters';
+import { JOB_STATUS_COLORS, JOB_STATUS_LABELS } from '@utils/constants';
 import { IoArrowBackOutline } from 'react-icons/io5';
-
-import { checklistApi } from '@api/checklistApi';
 
 const JobDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  
-  const [loading, setLoading] = useState(true);
-  const [job, setJob] = useState(null);
-  const [progress, setProgress] = useState([]);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetchJobDetails();
-    fetchJobProgress();
-  }, [id]);
+  const { data: job, isLoading: jobLoading, error: jobError } = useJobDetail(id);
+  const { data: progress = [] } = useJobProgress(id);
 
-  const fetchJobDetails = async () => {
-    setLoading(true);
-    try {
-      const response = await dashboardApi.getJob(id);
-      console.log('Job details response:', response);
-      setJob(response.job || response.data);
-    } catch (error) {
-      const message = error.message || 'Failed to fetch job details';
-      toast.error(message);
-      // Redirect to dashboard if job not found
-      if (error.status === 404) {
+  React.useEffect(() => {
+    if (jobError) {
+      toast.error(jobError.message || 'Failed to fetch job details');
+      if (jobError.status === 404) {
         navigate('/dashboard');
       }
-    } finally {
-      setLoading(false);
     }
+  }, [jobError, navigate, toast]);
+
+  const handleUploadSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['partner-job-progress', id] });
+    queryClient.invalidateQueries({ queryKey: ['partner-job', id] });
   };
 
-  const fetchJobProgress = async () => {
-    try {
-      const response = await dashboardApi.getJobProgress(id);
-      console.log('Full API response:', response); // Add this
-      console.log('response.progress:', response.progress); // And this
-      console.log('response.data:', response.data); // And this
-      setProgress(response.uploads || []);
-    } catch (error) {
-      console.error('Failed to fetch progress:', error);
-      // Don't show error toast for progress, as it's optional
-    }
-  };
-
-  const handleUploadSuccess = async (newProgress) => {
-  // Just refresh the entire progress list from backend
-  await fetchJobProgress();
-  // Refresh job details to update status if needed
-  fetchJobDetails();
-};
-
-  if (loading) {
+  if (jobLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader size="lg" text="Loading job details..." />
@@ -75,7 +47,7 @@ const JobDetailPage = () => {
   if (!job) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-primary-grey-900 mb-4">
+        <h2 className="text-2xl font-bold text-foreground mb-4">
           Job Not Found
         </h2>
         <Button variant="primary" onClick={() => navigate('/dashboard')}>
@@ -85,101 +57,114 @@ const JobDetailPage = () => {
     );
   }
 
+  const checklists = Array.isArray(job.checklists) ? job.checklists : [];
+  const progressUpdates = Array.isArray(progress) ? progress.filter(Boolean) : [];
+  const latestFirstProgress = [...progressUpdates].sort(
+    (a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at)
+  );
+
   return (
-    <div className="animate-fadeIn">
-      {/* Back Button */}
+    <div className="animate-fadeIn space-y-6">
       <Button
         variant="ghost"
         size="sm"
         onClick={() => navigate('/dashboard')}
-        className="mb-4"
+        className="w-fit"
       >
         <IoArrowBackOutline size={20} />
         Back to Dashboard
       </Button>
 
-      {/* Page Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold font-montserrat text-primary-grey-900 mb-2">
-          Job Details
-        </h1>
-        {/* <p className="text-primary-grey-600">
-          View job information and upload progress updates
-        </p> */}
-      </div>
-      {/* <div className="mb-6">
-        <h3 className="text-lg font-semibold mb-3">Checklists</h3>
-        
-        {job.checklist_ids && job.checklist_ids.length > 0 ? (
-          <div className="space-y-2">
-            {job.checklist_ids.map((checklistId) => (
-              <Button
-                key={checklistId}
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  navigate(`/dashboard/jobs/${job.id}/checklist/${checklistId}`);
-                }}
-                className="mr-2"
-              >
-                View Checklist {checklistId}
-              </Button>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500">No checklists available</p>
-        )}
-      </div> */}
+      <section className="dashboard-hero">
+        <div className="relative z-10 flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-2">
+                Job Workspace
+              </p>
+              <h1 className="text-2xl md:text-3xl font-bold font-heading text-foreground mb-2">
+                {job.name}
+              </h1>
+              <span className={JOB_STATUS_COLORS[job.status]}>
+                {JOB_STATUS_LABELS[job.status] || job.status}
+              </span>
+            </div>
 
-     
-      
-      
-      {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column */}
+            <p className="text-sm text-muted-foreground">
+              Last update: {latestFirstProgress[0]?.uploaded_at
+                ? formatters.dateTime(latestFirstProgress[0].uploaded_at)
+                : 'No uploads yet'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="dashboard-hero-stat">
+              <p className="text-xs text-muted-foreground">Delivery Date</p>
+              <p className="text-base font-semibold text-foreground">
+                {formatters.date(job.delivery_date) || 'Not set'}
+              </p>
+            </div>
+            <div className="dashboard-hero-stat">
+              <p className="text-xs text-muted-foreground">Checklists</p>
+              <p className="text-base font-semibold text-foreground">
+                {checklists.length}
+              </p>
+            </div>
+            <div className="dashboard-hero-stat">
+              <p className="text-xs text-muted-foreground">Progress Updates</p>
+              <p className="text-base font-semibold text-foreground">
+                {latestFirstProgress.length}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1.25fr_1fr] gap-6 items-start">
         <div className="space-y-6">
           <JobDetails job={job} />
 
-          
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-3">Checklists</h3>
-
-            {job.checklists && job.checklists.length > 0 ? (
+          <Card
+            title="Checklists"
+            headerRight={(
+              <span className="text-xs text-muted-foreground">
+                {checklists.length} linked
+              </span>
+            )}
+          >
+            {checklists.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {job.checklists.map((checklist) => (
-                  <Button
+                {checklists.map((checklist) => (
+                  <button
                     key={checklist.id}
-                    variant="secondary"
-                    size="sm"
-                    // className="border-[#3D1D1C] text-[#3D1D1C] hover:bg-[#3D1D1C]/10"
+                    type="button"
                     onClick={() => {
                       navigate(`/dashboard/jobs/${job.id}/checklist/${checklist.id}`);
                     }}
+                    className="dashboard-filter-btn justify-between"
                   >
-                    {checklist.name}
-                  </Button>
+                    <span className="truncate">{checklist.name}</span>
+                    <span className="dashboard-filter-count">
+                      Open
+                    </span>
+                  </button>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500">No checklists available</p>
+              <p className="text-sm text-muted-foreground">
+                No checklists are attached to this job yet.
+              </p>
             )}
-          </div>
-          {/* <ProgressUpload 
-            jobId={job.id} 
-            onUploadSuccess={handleUploadSuccess}
-          /> */}
+          </Card>
         </div>
 
-        <div>
-          <ProgressUpload 
-            jobId={job.id} 
+        <div className="space-y-6">
+          <ProgressUpload
+            jobId={job.id}
             onUploadSuccess={handleUploadSuccess}
           />
-        </div>
 
-        {/* Right Column */}
-        <div>
-          <ProgressTimeline progress={progress} />
+          <ProgressTimeline progress={latestFirstProgress} />
         </div>
       </div>
     </div>

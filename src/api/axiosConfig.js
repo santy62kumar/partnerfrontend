@@ -20,7 +20,7 @@
 //         const { state } = JSON.parse(authStorage);
 //         const token = state?.token;
 //         console.log("Token from storage:", token);
-        
+
 //         if (token) {
 //           config.headers.Authorization = `Bearer ${token}`;
 //         }
@@ -28,7 +28,7 @@
 //         console.error('Error parsing auth storage:', error);
 //       }
 //     }
-    
+
 //     return config;
 //   },
 //   (error) => {
@@ -46,33 +46,33 @@
 //     if (error.response) {
 //       // Server responded with error status
 //       const { status, data } = error.response;
-      
+
 //       switch (status) {
 //         case 401:
 //           // Unauthorized - Clear auth and redirect to login
 //           localStorage.removeItem('auth-storage');
 //           window.location.href = '/login';
 //           break;
-          
+
 //         case 403:
 //           // Forbidden
 //           console.error('Access forbidden:', data.message);
 //           break;
-          
+
 //         case 404:
 //           // Not found
 //           console.error('Resource not found:', data.message);
 //           break;
-          
+
 //         case 500:
 //           // Server error
 //           console.error('Server error:', data.message);
 //           break;
-          
+
 //         default:
 //           console.error('Error:', data.message || 'An error occurred');
 //       }
-      
+
 //       // Return error with message
 //       return Promise.reject({
 //         status,
@@ -100,6 +100,52 @@
 
 import axios from 'axios';
 import { API_BASE_URL } from '@utils/constants';
+import { useAuthStore } from '@store/authStore';
+import Cookies from 'js-cookie';
+
+const CSRF_COOKIE_NAMES = ['csrf_token', 'csrftoken', 'XSRF-TOKEN'];
+const MUTATING_METHODS = ['post', 'put', 'patch', 'delete'];
+
+const getCsrfToken = () => {
+  for (const name of CSRF_COOKIE_NAMES) {
+    const token = Cookies.get(name);
+    if (token) return token;
+  }
+  return null;
+};
+
+const formatValidationErrors = (detail) => {
+  if (!Array.isArray(detail)) return null;
+  const lines = detail
+    .map((item) => {
+      if (typeof item === 'string') return item;
+      if (!item || typeof item !== 'object') return null;
+      const field = Array.isArray(item.loc) ? item.loc.slice(1).join('.') : '';
+      const msg = item.msg || 'Invalid input';
+      return field ? `${field}: ${msg}` : msg;
+    })
+    .filter(Boolean);
+  return lines.length ? lines.join(', ') : null;
+};
+
+const getErrorMessage = (data) => {
+  if (!data) return 'An error occurred';
+  if (typeof data === 'string') return data;
+
+  if (data.detail !== undefined) {
+    if (typeof data.detail === 'string') return data.detail;
+    const validation = formatValidationErrors(data.detail);
+    if (validation) return validation;
+    if (data.detail && typeof data.detail === 'object' && typeof data.detail.msg === 'string') {
+      return data.detail.msg;
+    }
+  }
+
+  if (typeof data.message === 'string') return data.message;
+  if (typeof data.error === 'string') return data.error;
+
+  return 'An error occurred';
+};
 
 // Create axios instance
 const apiClient = axios.create({
@@ -108,24 +154,26 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 30000, // 30 seconds
-  // withCredentials: true, 
+  withCredentials: true,
 });
 
 // Request interceptor - Send cookies with every request
 apiClient.interceptors.request.use(
   (config) => {
-
     const token = localStorage.getItem('auth-token');
-    
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('🔑 Token added:', token.substring(0, 20) + '...');
-    } else {
-      console.log('⚠️ No token found in localStorage');
     }
-    
-    console.log('📤 Request URL:', config.url);
-    console.log('📋 Request Headers:', config.headers);
+
+    // Attach CSRF token to all state-changing requests
+    if (MUTATING_METHODS.includes(config.method?.toLowerCase())) {
+      const csrfToken = getCsrfToken();
+      if (csrfToken) {
+        config.headers['X-CSRF-Token'] = csrfToken;
+      }
+    }
+
     return config;
   },
   (error) => {
@@ -138,42 +186,54 @@ apiClient.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
     // Handle different error scenarios
     if (error.response) {
       const { status, data } = error.response;
-      
+      const message = getErrorMessage(data);
+
+      if (status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/login') && !originalRequest.url.includes('/auth/refresh-token') && !originalRequest.url.includes('/auth/verify-otp')) {
+        originalRequest._retry = true;
+        try {
+          await axios.post(`${API_BASE_URL}/auth/refresh-token`, {}, { withCredentials: true });
+          return apiClient(originalRequest);
+        } catch (refreshError) {
+          useAuthStore.getState().clearAuth();
+        }
+      } else if (status === 401) {
+        // Unauthorized - Clear auth and redirect to login
+        useAuthStore.getState().clearAuth();
+      }
+
       switch (status) {
         case 401:
-          // Unauthorized - Clear auth and redirect to login
-          // No longer need to clear localStorage since the token is stored in a secure cookie
-          useAuthStore.getState().clearAuth();
-          // window.location.href = '/login';
+          // Already handled above
           break;
-          
+
         case 403:
           // Forbidden
-          console.error('Access forbidden:', data.message);
+          console.error('Access forbidden:', message);
           break;
-          
+
         case 404:
           // Not found
-          console.error('Resource not found:', data.message);
+          console.error('Resource not found:', message);
           break;
-          
+
         case 500:
           // Server error
-          console.error('Server error:', data.message);
+          console.error('Server error:', message);
           break;
-          
+
         default:
-          console.error('Error:', data.message || 'An error occurred');
+          console.error('Error:', message);
       }
-      
+
       // Return error with message
       return Promise.reject({
         status,
-        message: data.detail || data.message || data.error || 'An error occurred',
+        message,
         data,
       });
     } else if (error.request) {

@@ -1,15 +1,6 @@
 import React, { useEffect } from 'react';
 import { IoClose } from 'react-icons/io5';
 
-/**
- * Reusable Modal Component
- * @param {boolean} isOpen - Modal open state
- * @param {Function} onClose - Close handler
- * @param {string} title - Modal title
- * @param {React.ReactNode} children - Modal content
- * @param {string} size - Modal size (sm, md, lg, xl)
- * @param {boolean} showCloseButton - Show close button in header
- */
 const Modal = ({
   isOpen,
   onClose,
@@ -19,7 +10,6 @@ const Modal = ({
   showCloseButton = true,
   closeOnOverlayClick = true,
 }) => {
-  // Handle ESC key press
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape' && isOpen) {
@@ -31,7 +21,6 @@ const Modal = ({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
-  // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -60,25 +49,15 @@ const Modal = ({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 animate-fadeIn"
-      onClick={handleOverlayClick}
-    >
-      <div
-        className={`bg-white rounded-lg shadow-xl w-full ${sizes[size]} max-h-[90vh] flex flex-col`}
-      >
-        {/* Header */}
+    <div className="modal-overlay" onClick={handleOverlayClick}>
+      <div className={`modal-panel ${sizes[size]}`}>
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-primary-grey-200">
-            {title && (
-              <h2 className="text-xl font-semibold font-montserrat text-primary-grey-900">
-                {title}
-              </h2>
-            )}
+          <div className="modal-header">
+            {title && <h2 className="modal-title">{title}</h2>}
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="text-primary-grey-500 hover:text-primary-grey-700 transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 <IoClose size={24} />
               </button>
@@ -86,7 +65,6 @@ const Modal = ({
           </div>
         )}
 
-        {/* Content */}
         <div className="px-6 py-4 overflow-y-auto flex-1">
           {children}
         </div>

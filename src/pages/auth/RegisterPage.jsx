@@ -1,140 +1,98 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import Input from '@components/common/Input';
 import Button from '@components/common/Button';
 import Card from '@components/common/Card';
 import { useAuth } from '@hooks/useAuth';
-import { validators } from '@utils/validators';
-import { APP_NAME } from '@utils/constants';
+import { registerSchema } from '@utils/schemas';
 import AuthHeader from '@components/auth/AuthHeader';
 
 const RegisterPage = () => {
-  const { register } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    phoneNumber: '',
-    firstName: '',
-    lastName: '',
-    city: '',
-    pincode: '',
+  const { register: registerUser } = useAuth();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(registerSchema),
   });
-  const [errors, setErrors] = useState({});
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    const phoneValidation = validators.phone(formData.phoneNumber);
-    if (!phoneValidation.valid) {
-      newErrors.phoneNumber = phoneValidation.message;
-    }
-
-    const firstNameValidation = validators.name(formData.firstName);
-    if (!firstNameValidation.valid) {
-      newErrors.firstName = firstNameValidation.message;
-    }
-
-    const lastNameValidation = validators.name(formData.lastName);
-    if (!lastNameValidation.valid) {
-      newErrors.lastName = lastNameValidation.message;
-    }
-
-    if (!formData.city.trim()) {
-      newErrors.city = 'City is required';
-    }
-
-    const pincodeValidation = validators.pincode(formData.pincode);
-    if (!pincodeValidation.valid) {
-      newErrors.pincode = pincodeValidation.message;
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
-
-    setLoading(true);
-    await register(formData);
-    setLoading(false);
+  const onSubmit = async (formData) => {
+    await registerUser(formData);
   };
 
   return (
-    <div className="min-h-screen bg-primary-grey-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        
-
-        <Card>
-          <AuthHeader subtitle="Create your account" />
-            <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="auth-page">
+      <div className="auth-container animate-slideUp">
+        <Card className="auth-card">
+          <AuthHeader
+            title="Create Account"
+            subtitle="Complete your details to get started"
+          />
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <Input
               label="Phone Number"
-              name="phoneNumber"
+              id="phoneNumber"
               type="tel"
               placeholder="Enter 10-digit phone number"
-              value={formData.phoneNumber}
-              onChange={handleChange}
-              error={errors.phoneNumber}
+              error={errors.phoneNumber?.message}
+              helperText="This number will be used for OTP login"
               required
               maxLength={10}
+              autoComplete="tel-national"
+              inputMode="numeric"
+              {...register('phoneNumber')}
             />
 
             <div className="grid grid-cols-2 gap-4">
               <Input
                 label="First Name"
-                name="firstName"
+                id="firstName"
                 type="text"
                 placeholder="First name"
-                value={formData.firstName}
-                onChange={handleChange}
-                error={errors.firstName}
+                error={errors.firstName?.message}
                 required
+                autoComplete="given-name"
+                {...register('firstName')}
               />
 
               <Input
                 label="Last Name"
-                name="lastName"
+                id="lastName"
                 type="text"
                 placeholder="Last name"
-                value={formData.lastName}
-                onChange={handleChange}
-                error={errors.lastName}
+                error={errors.lastName?.message}
                 required
+                autoComplete="family-name"
+                {...register('lastName')}
               />
             </div>
 
             <Input
               label="City"
-              name="city"
+              id="city"
               type="text"
               placeholder="Enter your city"
-              value={formData.city}
-              onChange={handleChange}
-              error={errors.city}
+              error={errors.city?.message}
               required
+              autoComplete="address-level2"
+              {...register('city')}
             />
 
             <Input
               label="Pincode"
-              name="pincode"
+              id="pincode"
               type="text"
               placeholder="Enter 6-digit pincode"
-              value={formData.pincode}
-              onChange={handleChange}
-              error={errors.pincode}
+              error={errors.pincode?.message}
               required
               maxLength={6}
+              autoComplete="postal-code"
+              inputMode="numeric"
+              {...register('pincode')}
             />
 
             <Button
@@ -142,18 +100,18 @@ const RegisterPage = () => {
               variant="primary"
               size="lg"
               fullWidth
-              loading={loading}
+              loading={isSubmitting}
             >
               Register
             </Button>
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-primary-grey-600">
+            <p className="text-sm text-muted-foreground">
               Already have an account?{' '}
               <Link
                 to="/login"
-                className="text-[#3D1D1C] font-medium hover:underline"
+                className="text-primary font-medium hover:underline"
               >
                 Login here
               </Link>

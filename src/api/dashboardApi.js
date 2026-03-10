@@ -1,5 +1,7 @@
 import apiClient from './axiosConfig';
 
+const extractJob = (payload) => payload?.job || payload?.data || payload || null;
+
 export const dashboardApi = {
   // Get all jobs
   getJobs: async () => {
@@ -7,21 +9,33 @@ export const dashboardApi = {
     return response.data;
   },
 
-  // Get single job details
+  // Get single job details + checklist metadata for detail page
   getJob: async (jobId) => {
-    const response = await apiClient.get(`/dashboard/jobs/${jobId}`);
-    return response.data;
+    const [jobResponse, checklistsResponse] = await Promise.all([
+      apiClient.get(`/dashboard/jobs/${jobId}`),
+      apiClient.get(`/dashboard/jobs/${jobId}/checklists`).catch(() => ({ data: { checklists: [] } })),
+    ]);
+
+    const job = extractJob(jobResponse.data);
+    const checklists = checklistsResponse?.data?.checklists || [];
+
+    return {
+      ...jobResponse.data,
+      job: {
+        ...job,
+        checklists,
+      },
+    };
   },
 
-  // Upload job progress (file and/or comment)
+  // Upload job progress (file only supported by backend)
   uploadProgress: async (jobId, file, comment) => {
     const formData = new FormData();
-    formData.append('job_id', jobId);
-    
+
     if (file) {
       formData.append('file', file);
     }
-    
+
     if (comment) {
       formData.append('comment', comment);
     }

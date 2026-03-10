@@ -1,18 +1,9 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  IoHomeOutline, 
-  IoCheckmarkCircleOutline,
-  IoClose,
-  IoDocumentTextOutline,
-  IoTimeOutline 
-} from 'react-icons/io5';
+import { Home, CheckCircle2, X, FileText, Clock } from 'lucide-react';
 import { useUIStore } from '@store/uiStore';
+import { Button } from '@components/ui/button';
 
-/**
- * Sidebar Component
- * Navigation menu for the application
- */
 const Sidebar = () => {
   const { sidebarOpen, setSidebarOpen } = useUIStore();
 
@@ -20,22 +11,22 @@ const Sidebar = () => {
     {
       name: 'Dashboard',
       path: '/dashboard',
-      icon: IoHomeOutline,
+      icon: Home,
     },
     {
       name: 'Verification',
       path: '/verification',
-      icon: IoCheckmarkCircleOutline,
+      icon: CheckCircle2,
     },
     {
       name: 'Site Requisites',
       path: '/site-requisite',
-      icon: IoDocumentTextOutline,
+      icon: FileText,
     },
     {
       name: 'Site Requisites History',
       path: '/site-requisite-history',
-      icon: IoTimeOutline,
+      icon: Clock,
     },
   ];
 
@@ -44,54 +35,61 @@ const Sidebar = () => {
       {/* Overlay for mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-foreground/40 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
         />
       )}
 
       {/* Sidebar */}
       <aside
+        aria-label="Primary navigation"
         className={`
-          fixed top-0 left-0 h-full bg-white shadow-lg z-50 
-          transition-transform duration-300 w-64
+          fixed top-0 left-0 h-full bg-card border-r border-border shadow-elevated z-50 
+          transition-transform duration-300 w-64 flex flex-col
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          lg:translate-x-0 lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)]
+          lg:translate-x-0 lg:sticky lg:top-[65px] lg:h-[calc(100vh-65px)] lg:shadow-none
         `}
       >
         {/* Close button for mobile */}
-        <div className="flex items-center justify-between p-4 border-b border-primary-grey-200 lg:hidden">
-          <h2 className="text-lg font-semibold font-montserrat">Menu</h2>
-          <button
+        <div className="flex items-center justify-between p-4 border-b border-border lg:hidden">
+          <h2 className="text-lg font-semibold font-heading text-foreground">Menu</h2>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setSidebarOpen(false)}
-            className="p-2 hover:bg-primary-grey-100 rounded-lg transition-colors"
           >
-            <IoClose size={24} />
-          </button>
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <div className="px-5 pt-6 pb-3 hidden lg:block">
+          <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+            Operations
+          </p>
         </div>
 
         {/* Navigation Links */}
-        <nav className="p-4">
-          <ul className="space-y-2">
+        <nav className="px-3 flex-1 overflow-y-auto">
+          <ul className="space-y-1">
             {menuItems.map((item) => (
               <li key={item.path}>
                 <NavLink
                   to={item.path}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                      isActive
-                        ? 'bg-[#3D1D1C] text-white'
-                        : 'text-primary-grey-700 hover:bg-primary-grey-100'
+                    `relative flex items-center gap-3 px-3 py-2.5 rounded-md font-medium transition-colors ${isActive
+                      ? 'bg-primary/10 text-primary hover:bg-primary/15'
+                      : 'text-muted-foreground hover:bg-secondary/80 hover:text-foreground'
                     }`
                   }
                   onClick={() => {
-                    // Close sidebar on mobile after navigation
                     if (window.innerWidth < 1024) {
                       setSidebarOpen(false);
                     }
                   }}
                 >
-                  <item.icon size={20} />
-                  <span className="font-medium">{item.name}</span>
+                  <item.icon className="h-5 w-5" />
+                  <span>{item.name}</span>
                 </NavLink>
               </li>
             ))}

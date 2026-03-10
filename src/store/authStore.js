@@ -57,6 +57,7 @@ import { create } from 'zustand';
 
 export const useAuthStore = create((set) => ({
   user: null,
+  phoneNumber: null,
   isAuthenticated: false,
   isAuthResolved: false,   
 
@@ -70,10 +71,13 @@ export const useAuthStore = create((set) => ({
     setPhoneNumber: (phoneNumber) => set({ phoneNumber }),
 
   clearAuth: () =>
-    set({
+    set(() => {
+      localStorage.removeItem('auth-token');
+      return {
       user: null,
+      phoneNumber: null,
       isAuthenticated: false,
       isAuthResolved: true,
+      };
     }),
 }));
-

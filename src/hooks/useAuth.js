@@ -51,15 +51,15 @@
 //   const verifyOtp = async (otp) => {
 //     try {
 //       const response = await authApi.verifyOtp(phoneNumber, otp);
-      
+
 //       // Set token and user data
 //       console.log("OTP Verification Response:", response);
 //       console.log("Setting token:", response.access_token);
 //       setToken(response.access_token);
 //       setUser(response.user);
-      
+
 //       toast.success('Login successful!');
-      
+
 //       // Check verification status
 //       const verificationStatus = await verificationApi.getVerificationStatus();
 //       console.log("User Verification Status:", verificationStatus);
@@ -67,7 +67,7 @@
 //       console.log("is_pan_verified:", verificationStatus.is_pan_verified);
 //       console.log("is_bank_details_verified:", verificationStatus.is_bank_details_verified);
 
-      
+
 //       // Redirect based on verification status
 //       if (
 //         verificationStatus.is_verified &&
@@ -76,13 +76,13 @@
 //       ) {
 //         console.log("Navigating to dashboard");
 //         navigate('/dashboard');
-      
-       
+
+
 //       } else {
 //         console.log("Navigating to verification page");
 //         navigate('/verification');
 //       }
-      
+
 //       return { success: true, data: response };
 //     } catch (error) {
 //       const message = error.message || 'OTP verification failed';
@@ -133,7 +133,6 @@
 
 import { useAuthStore } from '@store/authStore';
 import { authApi } from '@api/authApi';
-import { verificationApi } from '@api/verificationApi';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useCallback } from 'react';
@@ -142,7 +141,6 @@ export const useAuth = () => {
   const navigate = useNavigate();
   const {
     user,
-    token,
     isAuthenticated,
     phoneNumber,
     setUser,
@@ -182,40 +180,23 @@ export const useAuth = () => {
     }
   };
 
- 
+
 
   const verifyOtp = useCallback(async (otp) => {
     try {
       const response = await authApi.verifyOtp(phoneNumber, otp);
-      console.log("📥 Full OTP Response:", response);
-      
-      const token = response.token;
-      console.log("🔑 Extracted Token:", token ? token.substring(0, 30) + '...' : 'NO TOKEN');
+      const verifiedUser = response?.user || response;
+      setUser(verifiedUser);
 
-      if (token) {
-        // ✅ Save to localStorage
-        localStorage.setItem('auth-token', token);
-        console.log('✅ Token saved to localStorage');
-        
-        // ✅ VERIFY it was saved
-        const savedToken = localStorage.getItem('auth-token');
-        console.log('✅ Verified saved token:', savedToken ? savedToken.substring(0, 30) + '...' : 'NOT FOUND');
-      } else {
-        console.error('⚠️ No token found in response:', response);
-      }
-      
-      // Set token and user data
-      setUser(response.user);
-      
       toast.success('Login successful!');
-      
-      // Check if user data already has verification flags
-      if (response.user) {
-        const isFullyVerified = 
-          response.user.is_verified === true &&
-          response.user.is_pan_verified === true &&
-          response.user.is_bank_details_verified === true;
-        
+
+      if (verifiedUser) {
+        const isFullyVerified =
+          verifiedUser.is_verified === true &&
+          verifiedUser.is_pan_verified === true &&
+          verifiedUser.is_bank_details_verified === true &&
+          verifiedUser.is_id_verified === true;
+
         if (isFullyVerified) {
           navigate('/dashboard', { replace: true });
         } else {
@@ -225,7 +206,7 @@ export const useAuth = () => {
         // Fallback: navigate to verification
         navigate('/verification', { replace: true });
       }
-      
+
       return { success: true, data: response };
     } catch (error) {
       const message = error.message || 'OTP verification failed';
@@ -263,7 +244,6 @@ export const useAuth = () => {
 
   return {
     user,
-    token,
     isAuthenticated,
     phoneNumber,
     register,

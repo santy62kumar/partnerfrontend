@@ -1,59 +1,65 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import Button from '@components/common/Button';
 import Card from '@components/common/Card';
 import { useAuth } from '@hooks/useAuth';
-import { useAuthStore } from '@store/authStore';
-import { validators } from '@utils/validators';
+import { otpSchema } from '@utils/schemas';
 import { APP_NAME } from '@utils/constants';
-import { formatters } from '@utils/formatters';
 import AuthHeader from '../../components/auth/AuthHeader';
 
 const OTPPage = () => {
   const navigate = useNavigate();
   const { verifyOtp, resendOtp, phoneNumber: storedPhoneNumber } = useAuth();
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [resendLoading, setResendLoading] = useState(false);
   const [timer, setTimer] = useState(60);
   const inputRefs = useRef([]);
 
-  // Redirect if no phone number
+  const {
+    handleSubmit,
+    setValue,
+    setError,
+    clearErrors,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(otpSchema),
+    defaultValues: { otp: '' },
+  });
+
   useEffect(() => {
     if (!storedPhoneNumber) {
       navigate('/login');
     }
   }, [storedPhoneNumber, navigate]);
 
-  // Timer countdown
   useEffect(() => {
     if (timer > 0) {
-      const interval = setInterval(() => {
-        setTimer((prev) => prev - 1);
-      }, 1000);
+      const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
       return () => clearInterval(interval);
     }
   }, [timer]);
 
-  const handleChange = (index, value) => {
-    // Only allow numbers
+  const syncOtpValue = (newDigits) => {
+    const value = newDigits.join('');
+    setValue('otp', value, { shouldValidate: value.length === 6 });
+    if (value.length < 6) clearErrors('otp');
+  };
+
+  const handleDigitChange = (index, value) => {
     if (value && !/^\d$/.test(value)) return;
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-    setError('');
-
-    // Auto-focus next input
+    const newDigits = [...digits];
+    newDigits[index] = value;
+    setDigits(newDigits);
+    syncOtpValue(newDigits);
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
   const handleKeyDown = (index, e) => {
-    // Handle backspace
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+    if (e.key === 'Backspace' && !digits[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
@@ -61,36 +67,21 @@ const OTPPage = () => {
   const handlePaste = (e) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData('text').slice(0, 6);
-    
     if (!/^\d+$/.test(pastedData)) return;
-
-    const newOtp = pastedData.split('');
-    while (newOtp.length < 6) newOtp.push('');
-    setOtp(newOtp);
-    
-    // Focus last filled input
+    const newDigits = pastedData.split('');
+    while (newDigits.length < 6) newDigits.push('');
+    setDigits(newDigits);
+    syncOtpValue(newDigits);
     const lastIndex = Math.min(pastedData.length, 5);
     inputRefs.current[lastIndex]?.focus();
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    const otpValue = otp.join('');
-    const validation = validators.otp(otpValue);
-    
-    if (!validation.valid) {
-      setError(validation.message);
-      return;
-    }
-
-    setLoading(true);
-    const result = await verifyOtp(otpValue);
-    setLoading(false);
-
+  const onSubmit = async ({ otp }) => {
+    const result = await verifyOtp(otp);
     if (!result.success) {
-      setError(result.error);
-      setOtp(['', '', '', '', '', '']);
+      setError('otp', { message: result.error });
+      setDigits(['', '', '', '', '', '']);
+      setValue('otp', '');
       inputRefs.current[0]?.focus();
     }
   };
@@ -100,44 +91,50 @@ const OTPPage = () => {
     await resendOtp();
     setResendLoading(false);
     setTimer(60);
-    setOtp(['', '', '', '', '', '']);
-    setError('');
+    setDigits(['', '', '', '', '', '']);
+    setValue('otp', '');
+    clearErrors('otp');
     inputRefs.current[0]?.focus();
   };
 
-  return (
-    <div className="min-h-screen bg-primary-grey-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        
+  const otpComplete = digits.join('').length === 6;
 
-        <Card>
-        <AuthHeader subtitle="Enter the 6-digit code sent to your phone" />
-          <form onSubmit={handleSubmit}>
+  return (
+    <div className="auth-page">
+      <div className="auth-container animate-slideUp">
+        <Card className="auth-card">
+          <AuthHeader
+            title="OTP Verification"
+            subtitle="Enter the 6-digit code sent to your phone"
+          />
+          <form onSubmit={handleSubmit(onSubmit)}>
             <div className="mb-6">
-              {/* <label className="block text-sm font-medium text-primary-grey-700 mb-3 text-center">
-                Enter 6-digit OTP
-              </label> */}
-              <div className="flex gap-2 justify-center">
-                {otp.map((digit, index) => (
+              <div className="flex gap-2 justify-center" role="group" aria-label="One-time password input">
+                {digits.map((digit, index) => (
                   <input
                     key={index}
                     ref={(el) => (inputRefs.current[index] = el)}
                     type="text"
                     maxLength={1}
+                    inputMode="numeric"
+                    autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                    aria-label={`OTP digit ${index + 1} of 6`}
                     value={digit}
-                    onChange={(e) => handleChange(index, e.target.value)}
+                    onChange={(e) => handleDigitChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     onPaste={handlePaste}
                     className={`w-12 h-12 text-center text-xl font-semibold border-2 rounded-lg focus:outline-none focus:ring-2 transition-colors ${
-                      error
-                        ? 'border-primary-red focus:border-primary-red focus:ring-primary-red'
-                        : 'border-primary-grey-300 focus:border-[#3D1D1C] focus:ring-[#3D1D1C]'
+                      errors.otp
+                        ? 'border-destructive focus:border-destructive focus:ring-destructive'
+                        : 'border-input focus:border-ring focus:ring-ring'
                     }`}
                   />
                 ))}
               </div>
-              {error && (
-                <p className="mt-2 text-sm text-primary-red text-center">{error}</p>
+              {errors.otp && (
+                <p role="alert" className="mt-2 text-sm text-destructive text-center">
+                  {errors.otp.message}
+                </p>
               )}
             </div>
 
@@ -146,8 +143,8 @@ const OTPPage = () => {
               variant="primary"
               size="lg"
               fullWidth
-              loading={loading}
-              disabled={otp.join('').length !== 6}
+              loading={isSubmitting}
+              disabled={!otpComplete}
             >
               Verify OTP
             </Button>
@@ -155,14 +152,15 @@ const OTPPage = () => {
 
           <div className="mt-6 text-center">
             {timer > 0 ? (
-              <p className="text-sm text-primary-grey-600">
+              <p className="text-sm text-muted-foreground">
                 Resend OTP in <span className="font-semibold">{timer}s</span>
               </p>
             ) : (
               <button
+                type="button"
                 onClick={handleResend}
                 disabled={resendLoading}
-                className="text-sm text-[#3D1D1C] font-medium hover:underline disabled:opacity-50"
+                className="text-sm text-primary font-medium hover:underline disabled:opacity-50"
               >
                 {resendLoading ? 'Sending...' : 'Resend OTP'}
               </button>
@@ -171,13 +169,18 @@ const OTPPage = () => {
 
           <div className="mt-4 text-center">
             <button
+              type="button"
               onClick={() => navigate('/login')}
-              className="text-sm text-primary-grey-600 hover:text-primary-grey-900"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               ← Back to Login
             </button>
           </div>
         </Card>
+
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          {APP_NAME} • Secure verification flow
+        </p>
       </div>
     </div>
   );
