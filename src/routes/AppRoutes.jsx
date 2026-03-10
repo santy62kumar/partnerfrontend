@@ -24,8 +24,13 @@ function AppRoutes() {
   useEffect(() => {
     const hydrateSession = async () => {
       try {
-        const res = await apiClient.get('/auth/me', { withCredentials: true });
-        useAuthStore.getState().setUser(res.data);
+        const verifyRes = await apiClient.get('/auth/verify-token');
+        if (verifyRes.data.valid) {
+          const res = await apiClient.get('/auth/me');
+          useAuthStore.getState().setUser(res.data);
+        } else {
+          useAuthStore.getState().clearAuth();
+        }
       } catch {
         useAuthStore.getState().clearAuth();
       }
@@ -57,9 +62,9 @@ function AppRoutes() {
           <Route path="/site-requisite" element={<SiteRequisitePage />} />
           {/* <Route path="/site-requisite" element={<SiteRequisitePage />} /> */}
 
-        <Route path="/site-requisite/bucket" element={<BucketPage />} />
-        <Route path="/site-requisite/bucket/submit" element={<SubmitPage />} />
-        <Route path="/site-requisite-history" element={<HistoryPage />} />
+          <Route path="/site-requisite/bucket" element={<BucketPage />} />
+          <Route path="/site-requisite/bucket/submit" element={<SubmitPage />} />
+          <Route path="/site-requisite-history" element={<HistoryPage />} />
         </Route>
 
         {/* Default Redirect */}

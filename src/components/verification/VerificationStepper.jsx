@@ -1,11 +1,7 @@
 import React from 'react';
-import { IoCheckmarkCircle, IoEllipseOutline } from 'react-icons/io5';
+import { CheckCircle2 } from 'lucide-react';
 import { VERIFICATION_STEPS } from '@utils/constants';
 
-/**
- * Verification Stepper Component
- * Shows the current step in verification process
- */
 const VerificationStepper = ({ currentStep, isPanVerified, isBankVerified }) => {
   const steps = [
     {
@@ -40,59 +36,53 @@ const VerificationStepper = ({ currentStep, isPanVerified, isBankVerified }) => 
       <div className="flex items-center justify-between">
         {steps.map((step, index) => {
           const status = getStepStatus(step.id);
-          
+
           return (
             <React.Fragment key={step.id}>
-              <div className="flex flex-col items-center flex-1">
-                {/* Step Circle */}
+              <div className="flex flex-col items-center flex-1 relative z-10">
                 <div
                   className={`
-                    flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all
-                    ${
-                      status === 'completed'
-                        ? 'bg-[#3D1D1C] border-[#3D1D1C] text-white'
-                        : status === 'current'
-                        ? 'bg-white border-[#3D1D1C] text-[#3D1D1C]'
-                        : 'bg-white border-primary-grey-300 text-primary-grey-400'
+                    flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all bg-card
+                    ${status === 'completed'
+                      ? 'border-primary text-primary'
+                      : status === 'current'
+                        ? 'border-primary text-primary ring-4 ring-primary/10'
+                        : 'border-muted text-muted-foreground'
                     }
                   `}
                 >
                   {status === 'completed' ? (
-                    <IoCheckmarkCircle size={24} />
+                    <CheckCircle2 className="h-5 w-5" />
                   ) : (
-                    <span className="font-semibold">{index + 1}</span>
+                    <span className="font-semibold text-sm">{index + 1}</span>
                   )}
                 </div>
 
-                {/* Step Info */}
-                <div className="mt-2 text-center">
+                <div className="mt-4 text-center">
                   <p
-                    className={`text-sm font-medium ${
-                      status === 'completed' || status === 'current'
-                        ? 'text-primary-grey-900'
-                        : 'text-primary-grey-500'
-                    }`}
+                    className={`text-sm font-semibold ${status === 'completed' || status === 'current'
+                      ? 'text-foreground'
+                      : 'text-muted-foreground'
+                      }`}
                   >
                     {step.name}
                   </p>
-                  <p className="text-xs text-primary-grey-500 mt-1 hidden sm:block">
+                  <p className="text-[11px] text-muted-foreground mt-1 hidden sm:block font-medium">
                     {step.description}
                   </p>
                 </div>
               </div>
 
-              {/* Connector Line */}
               {index < steps.length - 1 && (
                 <div
                   className={`
-                    flex-1 h-0.5 mx-2 transition-all
-                    ${
-                      getStepStatus(steps[index + 1].id) === 'completed'
-                        ? 'bg-[#3D1D1C]'
-                        : 'bg-primary-grey-300'
+                    flex-1 h-0.5 mx-[-1rem] transition-all relative z-0
+                    ${getStepStatus(steps[index + 1].id) === 'completed' || getStepStatus(steps[index + 1].id) === 'current'
+                      ? 'bg-primary'
+                      : 'bg-muted'
                     }
                   `}
-                  style={{ marginTop: '-3rem' }}
+                  style={{ marginTop: '-4rem' }}
                 />
               )}
             </React.Fragment>

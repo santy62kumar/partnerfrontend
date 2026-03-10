@@ -1,17 +1,13 @@
 import React, { useState } from 'react';
-import Button from '@components/common/Button';
-import Card from '@components/common/Card';
-import FileUpload from '@components/common/FileUpload';
 import { verificationApi } from '@api/verificationApi';
 import { useFileUpload } from '@hooks/useFileUpload';
 import { useToast } from '@hooks/useToast';
 import { useNavigate } from 'react-router-dom';
-import { IoCheckmarkCircleOutline, IoLockClosedOutline } from 'react-icons/io5';
+import { CheckCircle2, Lock } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@components/ui/card';
+import { Button } from '@components/ui/button';
+import FileUpload from '@components/common/FileUpload';
 
-/**
- * Document Upload Component
- * Third step in verification process (Optional)
- */
 const DocumentUpload = ({ canProceed, isDocumentUploaded }) => {
   const toast = useToast();
   const navigate = useNavigate();
@@ -56,94 +52,83 @@ const DocumentUpload = ({ canProceed, isDocumentUploaded }) => {
 
   if (!canProceed) {
     return (
-      <Card>
-        <div className="text-center py-8">
-          <IoLockClosedOutline
-            size={64}
-            className="text-primary-grey-400 mx-auto mb-4"
-          />
-          <h3 className="text-xl font-semibold text-primary-grey-900 mb-2">
-            Complete Previous Steps
-          </h3>
-          <p className="text-primary-grey-600">
+      <Card className="border-border/80 shadow-sm opacity-80 bg-secondary/10">
+        <CardContent className="pt-8 pb-8 text-center flex flex-col items-center">
+          <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center mb-4">
+            <Lock className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h3 className="text-xl font-semibold text-foreground mb-2">Previous Steps Required</h3>
+          <p className="text-muted-foreground">
             Please verify your PAN and bank details first.
           </p>
-        </div>
+        </CardContent>
       </Card>
     );
   }
 
   if (uploaded) {
     return (
-      <Card>
-        <div className="text-center py-8">
-          <IoCheckmarkCircleOutline
-            size={64}
-            className="text-[#3D1D1C] mx-auto mb-4"
-          />
-          <h3 className="text-xl font-semibold text-primary-grey-900 mb-2">
-            Document Uploaded Successfully
-          </h3>
-          <p className="text-primary-grey-600 mb-6">
-            Your verification is complete. You can now access the dashboard.
-          </p>
-          <Button
-            variant="primary"
-            size="lg"
-            onClick={handleContinue}
-          >
+      <Card className="border-border/80 shadow-sm">
+        <CardContent className="pt-8 pb-8 text-center flex flex-col items-center">
+          <CheckCircle2 className="mx-auto mb-4 h-16 w-16 text-success" />
+          <h3 className="text-xl font-semibold text-foreground mb-2">Document Uploaded Successfully</h3>
+          <p className="text-muted-foreground mb-6">Your verification applies are complete. You can now access the dashboard.</p>
+          <Button size="lg" onClick={handleContinue}>
             Continue to Dashboard
           </Button>
-        </div>
+        </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card title="Upload Educational Documents (Optional)">
-      <p className="text-sm text-primary-grey-600 mb-4">
-        Upload your educational certificates or degrees. This step is optional but recommended for better opportunities.
-      </p>
+    <Card className="border-border/80 shadow-sm hover:shadow-md transition-all">
+      <CardHeader>
+        <CardTitle className="text-xl">Upload Educational Documents</CardTitle>
+        <CardDescription>
+          Upload your educational certificates or degrees. This step is optional but recommended for better opportunities.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="bg-warning/10 border border-warning/25 rounded-lg p-3 mb-6">
+          <p className="text-xs text-warning-foreground font-medium">
+            Optional Step: You can skip this step and complete it later from your profile.
+          </p>
+        </div>
 
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
-        <p className="text-xs text-yellow-800">
-          <strong>Optional Step:</strong> You can skip this step and complete it later from your profile.
+        <FileUpload
+          file={file}
+          preview={preview}
+          onFileSelect={handleFileSelect}
+          onClear={clearFile}
+          error={error}
+          label="Educational Certificate"
+        />
+
+        <div className="flex gap-3 mt-8">
+          <Button
+            variant="outline"
+            size="lg"
+            className="w-full"
+            onClick={handleSkip}
+          >
+            Skip for Now
+          </Button>
+          <Button
+            variant="default"
+            size="lg"
+            className="w-full"
+            disabled={!file || uploading}
+            onClick={handleUpload}
+          >
+            {uploading ? "Uploading..." : "Upload & Continue"}
+          </Button>
+        </div>
+
+        <p className="text-xs text-muted-foreground text-center mt-4">
+          Accepted formats: JPG, PNG, PDF (Max 5MB)
         </p>
-      </div>
-
-      <FileUpload
-        file={file}
-        preview={preview}
-        onFileSelect={handleFileSelect}
-        onClear={clearFile}
-        error={error}
-        label="Educational Certificate"
-      />
-
-      <div className="flex gap-3 mt-6">
-        <Button
-          variant="outline"
-          size="lg"
-          fullWidth
-          onClick={handleSkip}
-        >
-          Skip for Now
-        </Button>
-        <Button
-          variant="primary"
-          size="lg"
-          fullWidth
-          loading={uploading}
-          disabled={!file}
-          onClick={handleUpload}
-        >
-          Upload & Continue
-        </Button>
-      </div>
-
-      <p className="text-xs text-primary-grey-500 text-center mt-4">
-        Accepted formats: JPG, PNG, PDF (Max 5MB)
-      </p>
+      </CardContent>
     </Card>
   );
 };

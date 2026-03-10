@@ -38,6 +38,18 @@ export const authApi = {
     return response.data;
   },
 
+  // Verify Token
+  verifyToken: async () => {
+    const response = await apiClient.get('/auth/verify-token');
+    return response.data;
+  },
+
+  // Refresh Token
+  refreshToken: async () => {
+    const response = await apiClient.post('/auth/refresh-token');
+    return response.data;
+  },
+
   // Logout
   logout: async () => {
     const response = await apiClient.post('/auth/logout');

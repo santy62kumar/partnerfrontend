@@ -1,28 +1,27 @@
 import React from 'react';
 import Card from '@components/common/Card';
 import { formatters } from '@utils/formatters';
-import { 
-  IoDocumentTextOutline, 
+import {
+  IoDocumentTextOutline,
   IoImageOutline,
-  IoTimeOutline 
+  IoTimeOutline,
+  IoOpenOutline,
 } from 'react-icons/io5';
 
-/**
- * Progress Timeline Component
- * Shows chronological history of job progress uploads
- */
 const ProgressTimeline = ({ progress }) => {
-  console.log('Progress data:', progress);
-  console.log('Has undefined?', progress.some(item => item == null));
-  if (!progress || progress.length === 0) {
+  const timelineItems = (progress || [])
+    .filter((item) => item != null)
+    .sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at));
+
+  if (timelineItems.length === 0) {
     return (
       <Card title="Progress History">
         <div className="text-center py-8">
           <IoTimeOutline
             size={48}
-            className="text-primary-grey-300 mx-auto mb-3"
+            className="text-accent mx-auto mb-3"
           />
-          <p className="text-primary-grey-600">No progress uploaded yet</p>
+          <p className="text-muted-foreground">No progress uploaded yet</p>
         </div>
       </Card>
     );
@@ -36,66 +35,70 @@ const ProgressTimeline = ({ progress }) => {
   };
 
   return (
-    <Card title="Progress History">
+    <Card
+      title="Progress History"
+      headerRight={(
+        <span className="text-xs font-medium text-muted-foreground">
+          {timelineItems.length} update{timelineItems.length === 1 ? '' : 's'}
+        </span>
+      )}
+    >
       <div className="space-y-4">
-        
-        {progress
-        .filter(item => item != null)
-        .map((item, index) => {
+        {timelineItems.map((item, index) => {
           const FileIcon = item.doc_link ? getFileIcon(item.file_type) : null;
-          const isLast = index === progress.length - 1;
+          const isLast = index === timelineItems.length - 1;
 
           return (
-            <div key={item.id} className="relative">
-              {/* Timeline Line */}
+            <div key={item.id || `${item.uploaded_at}-${index}`} className="relative pl-14">
               {!isLast && (
-                <div className="absolute left-5 top-12 w-0.5 h-full bg-primary-grey-200 -z-10" />
+                <div className="absolute left-[17px] top-10 bottom-[-8px] w-px bg-border" />
               )}
 
-              <div className="flex gap-4">
-                {/* Timeline Dot */}
-                <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-[#3D1D1C] rounded-full flex items-center justify-center">
-                    <IoTimeOutline size={20} className="text-white" />
-                  </div>
+              <div className="absolute left-0 top-1 dashboard-timeline-marker">
+                <IoTimeOutline size={16} />
+              </div>
+
+              <div className="dashboard-timeline-item">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-2">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {formatters.dateTime(item.uploaded_at)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatters.relativeTime(item.uploaded_at)}
+                  </p>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 pb-6">
-                  <div className="bg-primary-grey-50 rounded-lg p-4">
-                    {/* Timestamp */}
-                    <p className="text-xs text-primary-grey-500 mb-2">
-                      {formatters.dateTime(item.uploaded_at)}
-                    </p>
+                {item.comment ? (
+                  <p className="text-sm text-foreground mb-3 whitespace-pre-wrap">
+                    {item.comment}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground mb-3 italic">
+                    No comment added with this upload.
+                  </p>
+                )}
 
-                    {/* Comment */}
-                    {item.comment && (
-                      <p className="text-sm text-primary-grey-900 mb-3 whitespace-pre-wrap">
-                        {item.comment}
-                      </p>
+                {item.doc_link && (
+                  <a
+                    href={item.doc_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-lg hover:bg-secondary transition-colors text-sm"
+                  >
+                    {FileIcon && (
+                      <FileIcon size={18} className="text-muted-foreground" />
                     )}
-
-                    {/* File */}
-                    {item.doc_link && (
-                      <a
-                        href={item.doc_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-primary-grey-300 rounded-lg hover:bg-primary-grey-100 transition-colors text-sm"
-                      >
-                        {FileIcon && <FileIcon size={18} className="text-primary-grey-600" />}
-                        <span className="text-primary-grey-700">
-                          View Attachment
-                        </span>
-                        {item.file_size && (
-                          <span className="text-xs text-primary-grey-500">
-                            ({formatters.fileSize(item.file_size)})
-                          </span>
-                        )}
-                      </a>
+                    <span className="text-foreground font-medium">
+                      Open attachment
+                    </span>
+                    {item.file_size && (
+                      <span className="text-xs text-muted-foreground">
+                        {formatters.fileSize(item.file_size)}
+                      </span>
                     )}
-                  </div>
-                </div>
+                    <IoOpenOutline size={15} className="text-muted-foreground" />
+                  </a>
+                )}
               </div>
             </div>
           );

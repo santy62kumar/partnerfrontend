@@ -1,17 +1,14 @@
 import React, { useState } from 'react';
-import Input from '@components/common/Input';
-import Button from '@components/common/Button';
-import Card from '@components/common/Card';
 import { verificationApi } from '@api/verificationApi';
 import { validators } from '@utils/validators';
 import { formatters } from '@utils/formatters';
 import { useToast } from '@hooks/useToast';
-import { IoCheckmarkCircleOutline } from 'react-icons/io5';
+import { CheckCircle2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@components/ui/card';
+import { Button } from '@components/ui/button';
+import { Input } from '@components/ui/input';
+import { Label } from '@components/ui/label';
 
-/**
- * PAN Verification Component
- * First step in verification process
- */
 const PANVerification = ({ onSuccess, isPanVerified }) => {
   const toast = useToast();
   const [pan, setPan] = useState('');
@@ -35,7 +32,6 @@ const PANVerification = ({ onSuccess, isPanVerified }) => {
 
     setLoading(true);
     try {
-      // await verificationApi.verifyPan(pan);
       const panResponse = await verificationApi.verifyPan(pan);
       console.log("PAN Verification Response:", panResponse);
       toast.success('PAN verified successfully!');
@@ -51,60 +47,60 @@ const PANVerification = ({ onSuccess, isPanVerified }) => {
 
   if (isPanVerified) {
     return (
-      <Card>
-        <div className="text-center py-8">
-          <IoCheckmarkCircleOutline
-            size={64}
-            className="text-[#3D1D1C] mx-auto mb-4"
-          />
-          <h3 className="text-xl font-semibold text-primary-grey-900 mb-2">
-            PAN Verified Successfully
-          </h3>
-          <p className="text-primary-grey-600">
-            Your PAN has been verified. Proceed to the next step.
-          </p>
-        </div>
+      <Card className="border-border/80 shadow-sm">
+        <CardContent className="pt-8 pb-8 text-center">
+          <CheckCircle2 className="mx-auto mb-4 h-16 w-16 text-success" />
+          <h3 className="text-xl font-semibold text-foreground mb-2">PAN Verified Successfully</h3>
+          <p className="text-muted-foreground">Your PAN has been verified. Proceed to the next step.</p>
+        </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card title="PAN Verification">
-      <form onSubmit={handleSubmit}>
-        <p className="text-sm text-primary-grey-600 mb-4">
+    <Card className="border-border/80 shadow-sm hover:shadow-md transition-all">
+      <CardHeader>
+        <CardTitle className="text-xl">PAN Verification</CardTitle>
+        <CardDescription>
           Please enter your PAN number to verify your identity. Make sure it matches your official documents.
-        </p>
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="pan">PAN Number</Label>
+            <Input
+              id="pan"
+              name="pan"
+              type="text"
+              placeholder="ABCDE1234F"
+              value={pan}
+              onChange={handleChange}
+              maxLength={10}
+              required
+              className={error ? 'border-destructive focus-visible:ring-destructive' : ''}
+            />
+            {error && <p className="text-xs text-destructive mt-1">{error}</p>}
+            {!error && <p className="text-xs text-muted-foreground mt-1">Enter 10-character PAN (e.g., ABCDE1234F)</p>}
+          </div>
 
-        <Input
-          label="PAN Number"
-          name="pan"
-          type="text"
-          placeholder="ABCDE1234F"
-          value={pan}
-          onChange={handleChange}
-          error={error}
-          required
-          maxLength={10}
-          helperText="Enter 10-character PAN (e.g., ABCDE1234F)"
-        />
+          <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+            <p className="text-xs text-primary font-medium">
+              Note: Your PAN will be automatically converted to uppercase format.
+            </p>
+          </div>
 
-        <div className="bg-[#3D1D1C]/50 border border-[#3D1D1C]/200 rounded-lg p-3 mb-4">
-          <p className="text-xs text-[#3D1D1C]/800">
-            <strong>Note:</strong> Your PAN will be automatically converted to uppercase format.
-          </p>
-        </div>
-
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          fullWidth
-          loading={loading}
-          disabled={pan.length !== 10}
-        >
-          Verify PAN
-        </Button>
-      </form>
+          <Button
+            type="submit"
+            className="w-full"
+            variant="default"
+            size="lg"
+            disabled={loading || pan.length !== 10}
+          >
+            {loading ? "Verifying..." : "Verify PAN"}
+          </Button>
+        </form>
+      </CardContent>
     </Card>
   );
 };

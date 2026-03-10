@@ -1,14 +1,5 @@
 import React from 'react';
 
-/**
- * Reusable Card Component
- * @param {React.ReactNode} children - Card content
- * @param {string} title - Optional card title
- * @param {React.ReactNode} headerRight - Content for right side of header
- * @param {boolean} hoverable - Add hover effect
- * @param {Function} onClick - Click handler for clickable cards
- * @param {string} className - Additional CSS classes
- */
 const Card = ({
   children,
   title,
@@ -18,27 +9,34 @@ const Card = ({
   className = '',
   padding = 'p-6',
 }) => {
-  const baseStyles = 'bg-white rounded-lg shadow-card transition-shadow duration-200';
-  const hoverStyles = hoverable ? 'hover:shadow-card-hover cursor-pointer' : '';
-  const clickableStyles = onClick ? 'cursor-pointer' : '';
+  const hoverClass = hoverable ? 'ds-card-hoverable' : '';
+  const clickableClass = onClick ? 'cursor-pointer' : '';
 
   return (
     <div
-      className={`${baseStyles} ${hoverStyles} ${clickableStyles} ${className}`}
+      className={`ds-card ${hoverClass} ${clickableClass} ${className}`}
       onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick(e);
+              }
+            }
+          : undefined
+      }
     >
       {(title || headerRight) && (
-        <div className="flex items-center justify-between border-b border-primary-grey-200 px-6 py-4">
-          {title && (
-            <h3 className="text-lg font-semibold font-montserrat text-primary-grey-900">
-              {title}
-            </h3>
-          )}
+        <div className="ds-card-header">
+          {title && <h3 className="ds-card-title">{title}</h3>}
           {headerRight && <div>{headerRight}</div>}
         </div>
       )}
-      
-      <div className={title || headerRight ? padding : padding}>
+
+      <div className={padding}>
         {children}
       </div>
     </div>

@@ -101,6 +101,18 @@
 import axios from 'axios';
 import { API_BASE_URL } from '@utils/constants';
 import { useAuthStore } from '@store/authStore';
+import Cookies from 'js-cookie';
+
+const CSRF_COOKIE_NAMES = ['csrf_token', 'csrftoken', 'XSRF-TOKEN'];
+const MUTATING_METHODS = ['post', 'put', 'patch', 'delete'];
+
+const getCsrfToken = () => {
+  for (const name of CSRF_COOKIE_NAMES) {
+    const token = Cookies.get(name);
+    if (token) return token;
+  }
+  return null;
+};
 
 const formatValidationErrors = (detail) => {
   if (!Array.isArray(detail)) return null;
@@ -153,6 +165,15 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Attach CSRF token to all state-changing requests
+    if (MUTATING_METHODS.includes(config.method?.toLowerCase())) {
+      const csrfToken = getCsrfToken();
+      if (csrfToken) {
+        config.headers['X-CSRF-Token'] = csrfToken;
+      }
+    }
+
     return config;
   },
   (error) => {
@@ -165,18 +186,29 @@ apiClient.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
     // Handle different error scenarios
     if (error.response) {
       const { status, data } = error.response;
       const message = getErrorMessage(data);
 
+      if (status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/login') && !originalRequest.url.includes('/auth/refresh-token') && !originalRequest.url.includes('/auth/verify-otp')) {
+        originalRequest._retry = true;
+        try {
+          await axios.post(`${API_BASE_URL}/auth/refresh-token`, {}, { withCredentials: true });
+          return apiClient(originalRequest);
+        } catch (refreshError) {
+          useAuthStore.getState().clearAuth();
+        }
+      } else if (status === 401) {
+        // Unauthorized - Clear auth and redirect to login
+        useAuthStore.getState().clearAuth();
+      }
+
       switch (status) {
         case 401:
-          // Unauthorized - Clear auth and redirect to login
-          // No longer need to clear localStorage since the token is stored in a secure cookie
-          useAuthStore.getState().clearAuth();
-          // window.location.href = '/login';
+          // Already handled above
           break;
 
         case 403:

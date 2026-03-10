@@ -1,11 +1,5 @@
 import React from 'react';
 
-/**
- * Reusable Loader Component
- * @param {string} size - Loader size (sm, md, lg)
- * @param {string} text - Loading text to display
- * @param {boolean} fullScreen - Show as full screen loader
- */
 const Loader = ({ size = 'md', text = '', fullScreen = false }) => {
   const sizes = {
     sm: 'h-6 w-6',
@@ -16,7 +10,7 @@ const Loader = ({ size = 'md', text = '', fullScreen = false }) => {
   const spinner = (
     <div className="flex flex-col items-center justify-center gap-3">
       <svg
-        className={`animate-spin ${sizes[size]} text-[#3D1D1C]`}
+        className={`spinner ${sizes[size]}`}
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"
@@ -36,14 +30,14 @@ const Loader = ({ size = 'md', text = '', fullScreen = false }) => {
         />
       </svg>
       {text && (
-        <p className="text-sm text-primary-grey-600 font-medium">{text}</p>
+        <p className="text-sm text-muted-foreground font-medium">{text}</p>
       )}
     </div>
   );
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 bg-white bg-opacity-90 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-background/90 flex items-center justify-center z-50">
         {spinner}
       </div>
     );

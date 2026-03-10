@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@store/authStore';
 import Layout from '@components/layout/Layout';
+import LoadingSpinner from '@components/common/LoadingSpinner';
 
 /**
  * Private Route Wrapper
@@ -10,8 +11,13 @@ import Layout from '@components/layout/Layout';
  */
 function PrivateRoute() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isAuthResolved = useAuthStore((state) => state.isAuthResolved);
   const user = useAuthStore((state) => state.user);
   const location = useLocation();
+
+  if (!isAuthResolved) {
+    return <LoadingSpinner message="Restoring session..." />;
+  }
 
   // 1) Not logged in
   if (!isAuthenticated) {

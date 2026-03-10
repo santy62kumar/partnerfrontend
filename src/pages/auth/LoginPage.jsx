@@ -1,58 +1,56 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import Input from '@components/common/Input';
 import Button from '@components/common/Button';
 import Card from '@components/common/Card';
 import { useAuth } from '@hooks/useAuth';
-import { validators } from '@utils/validators';
-import { APP_NAME } from '@utils/constants';
+import { loginSchema } from '@utils/schemas';
 import { IoPhonePortraitOutline } from 'react-icons/io5';
-import AuthHeader from '../../components/auth/AuthHeader';
+import AuthHeader from '@components/auth/AuthHeader';
 
 const LoginPage = () => {
   const { login } = useAuth();
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => {
-    setPhoneNumber(e.target.value);
-    if (error) setError('');
-  };
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+  });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const validation = validators.phone(phoneNumber);
-    if (!validation.valid) {
-      setError(validation.message);
-      return;
+  const onSubmit = async ({ phoneNumber }) => {
+    const result = await login(phoneNumber);
+    if (!result.success) {
+      setError('phoneNumber', { message: result.error || 'Login failed' });
     }
-
-    setLoading(true);
-    await login(phoneNumber);
-    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-primary-grey-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        
-
-        <Card>
-        <AuthHeader subtitle="Please login to continue" />
-          <form onSubmit={handleSubmit}>
+    <div className="auth-page">
+      <div className="auth-container animate-slideUp">
+        <Card className="auth-card">
+          <AuthHeader
+            title="Welcome Back"
+            subtitle="Please login to continue"
+          />
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-2" noValidate>
             <Input
               label="Phone Number"
-              name="phoneNumber"
+              id="phoneNumber"
               type="tel"
               placeholder="Enter your phone number"
-              value={phoneNumber}
-              onChange={handleChange}
-              error={error}
+              error={errors.phoneNumber?.message}
+              helperText="Use your 10-digit mobile number"
               required
               maxLength={10}
+              autoComplete="tel-national"
+              inputMode="numeric"
               leftIcon={<IoPhonePortraitOutline size={20} />}
+              {...register('phoneNumber')}
             />
 
             <Button
@@ -60,18 +58,18 @@ const LoginPage = () => {
               variant="primary"
               size="lg"
               fullWidth
-              loading={loading}
+              loading={isSubmitting}
             >
               Send OTP
             </Button>
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-primary-grey-600">
+            <p className="text-sm text-muted-foreground">
               Don't have an account?{' '}
               <Link
                 to="/register"
-                className="text-[#3D1D1C] font-medium hover:underline"
+                className="text-primary font-medium hover:underline"
               >
                 Register here
               </Link>
@@ -80,7 +78,7 @@ const LoginPage = () => {
         </Card>
 
         <div className="mt-4 text-center">
-          <p className="text-xs text-primary-grey-500">
+          <p className="mt-1 text-xs text-muted-foreground">
             By continuing, you agree to our Terms of Service and Privacy Policy
           </p>
         </div>

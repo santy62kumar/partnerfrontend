@@ -3,22 +3,14 @@ import React from 'react';
 import useChecklistStore from '../../store/checklistStore';
 import { ExclamationTriangleIcon, CheckIcon } from '@heroicons/react/24/outline';
 
-/**
- * Unsaved Changes Notification Bar
- * 
- * Shows when there are unsaved changes and provides save/discard actions
- * Sticky at the bottom of the viewport
- */
-
 const UnsavedChangesBar = () => {
   const hasUnsavedChanges = useChecklistStore(state => state.hasUnsavedChanges());
   const unsavedCount = useChecklistStore(state => state.getUnsavedCount());
   const isSaving = useChecklistStore(state => state.isSaving);
-  
+
   const saveChanges = useChecklistStore(state => state.saveChanges);
   const discardChanges = useChecklistStore(state => state.discardChanges);
 
-  // Don't render if no changes
   if (!hasUnsavedChanges) {
     return null;
   }
@@ -26,9 +18,7 @@ const UnsavedChangesBar = () => {
   const handleSave = async () => {
     try {
       await saveChanges();
-      // Show success notification (you can add a toast here)
     } catch (error) {
-      // Error is already handled in store
       console.error('Save failed:', error);
     }
   };
@@ -39,48 +29,40 @@ const UnsavedChangesBar = () => {
     }
   };
 
-  const sizes = {
-  sm: "w-4 h-4",
-  md: "w-5 h-5",
-  lg: "w-6 h-6",
-};
-
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-yellow-50 border-t-2 border-yellow-400 shadow-lg">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-warning/10 border-t-2 border-warning shadow-elevated">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex items-center justify-between">
-          {/* Warning Icon & Message */}
           <div className="flex items-center space-x-3">
-            <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600 flex-shrink-0" />
+            <ExclamationTriangleIcon className="h-6 w-6 text-warning flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium text-yellow-900">
+              <p className="text-sm font-medium text-foreground">
                 You have {unsavedCount} unsaved {unsavedCount === 1 ? 'change' : 'changes'}
               </p>
-              <p className="text-xs text-yellow-700">
+              <p className="text-xs text-muted-foreground">
                 Don't forget to save your changes before leaving this page
               </p>
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex items-center space-x-3">
             <button
               onClick={handleDiscard}
               disabled={isSaving}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-secondary btn-md"
             >
               Discard
             </button>
-            
+
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-[#3D1D1C] rounded-md hover:bg-[#3D1D1C]/80 focus:outline-none focus:ring-2 focus:ring-[#3D1D1C]/50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary btn-md"
             >
               {isSaving ? (
                 <>
                   <svg
-                    className={`animate-spin ${sizes.md} text-[#3D1D1C]`}  
+                    className="animate-spin w-5 h-5"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
