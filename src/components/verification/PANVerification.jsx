@@ -32,8 +32,7 @@ const PANVerification = ({ onSuccess, isPanVerified }) => {
 
     setLoading(true);
     try {
-      const panResponse = await verificationApi.verifyPan(pan);
-      console.log("PAN Verification Response:", panResponse);
+      await verificationApi.verifyPan(pan);
       toast.success('PAN verified successfully!');
       onSuccess();
     } catch (err) {

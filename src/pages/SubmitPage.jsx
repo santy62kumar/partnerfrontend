@@ -1,11 +1,17 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Send,
   CheckCircle,
   AlertCircle,
-  Loader
+  Loader,
+  Loader2,
+  Building2,
+  FolderOpen,
+  MapPin,
+  UserCircle2,
+  BadgeCheck
 } from 'lucide-react';
 import useRequisiteStore from '../store/requisiteStore';
 import { bomAPI } from '../api/bomApi';
@@ -16,12 +22,61 @@ import { Label } from '@components/ui/label';
 
 const SubmitPage = () => {
   const navigate = useNavigate();
-  const { bucket, salesOrder, cabinetPosition, clearBucket } = useRequisiteStore();
+  const { bucket, salesOrder, cabinetPosition, soDetails, setSODetails, clearBucket } = useRequisiteStore();
 
   const [srPoc, setSrPoc] = useState('');
+  const [repairReference, setRepairReference] = useState('');
+  const [expectedDelivery, setExpectedDelivery] = useState('');
+  const [doNumber, setDoNumber] = useState('');
   const [loading, setLoading] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  const formatOrderState = (value) => {
+    const normalized = String(value ?? '').trim().toLowerCase();
+    if (!normalized) return '';
+
+    const labels = {
+      draft: 'Quotation',
+      sent: 'Quotation Sent',
+      sale: 'Confirmed',
+      done: 'Locked',
+      cancel: 'Cancelled',
+    };
+
+    return labels[normalized] || normalized.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
+  const fetchSODetails = useCallback(async () => {
+    if (!salesOrder) {
+      return null;
+    }
+
+    setDetailsLoading(true);
+    setDetailsError('');
+
+    try {
+      const details = await bomAPI.lookupSO(salesOrder);
+      setSODetails(details);
+      return details;
+    } catch (err) {
+      const message = err?.message || err?.data?.detail || 'Failed to fetch sales order details from Odoo.';
+      setDetailsError(message);
+      return null;
+    } finally {
+      setDetailsLoading(false);
+    }
+  }, [salesOrder, setSODetails]);
+
+  useEffect(() => {
+    if (salesOrder && !soDetails) {
+      void fetchSODetails();
+    } else if (soDetails) {
+      setDetailsError('');
+    }
+  }, [fetchSODetails, salesOrder, soDetails]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,11 +95,20 @@ const SubmitPage = () => {
     setError('');
 
     try {
+      const resolvedDetails = await fetchSODetails();
+      if (!resolvedDetails) {
+        setError('Sales order details must be fetched from Odoo before submitting the site requisite.');
+        return;
+      }
+
       const payload = {
         sales_order: salesOrder,
         cabinet_position: cabinetPosition,
         sr_poc: srPoc || null,
-        items: bucket
+        repair_reference: repairReference || null,
+        expected_delivery: expectedDelivery || null,
+        do_number: doNumber || null,
+        items: bucket,
       };
 
       await bomAPI.submitRequisite(payload);
@@ -140,6 +204,83 @@ const SubmitPage = () => {
               </h2>
 
               <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="rounded-lg border border-border/70 bg-secondary/20 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Sales-order details from Odoo</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        These values are refreshed from Odoo before submission and will populate the site requisite.
+                      </p>
+                    </div>
+                    {detailsLoading ? (
+                      <div className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Fetching...
+                      </div>
+                    ) : soDetails ? (
+                      <div className="text-xs font-semibold text-emerald-700">
+                        Synced
+                      </div>
+                    ) : (
+                      <Button type="button" variant="outline" size="sm" onClick={() => void fetchSODetails()}>
+                        Refresh details
+                      </Button>
+                    )}
+                  </div>
+
+                  {detailsError ? (
+                    <div className="mt-4 flex items-start gap-3 rounded-md border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                      <div>
+                        <p className="font-semibold">SO details not available yet</p>
+                        <p className="mt-1">{detailsError}</p>
+                      </div>
+                    </div>
+                  ) : soDetails ? (
+                    <div className="mt-4 grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
+                      <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-background px-4 py-3">
+                        <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-primary/70" />
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">Customer</p>
+                          <p className="font-medium text-foreground">{soDetails.customer_name || 'N/A'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-background px-4 py-3">
+                        <FolderOpen className="mt-0.5 h-4 w-4 shrink-0 text-primary/70" />
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">Project</p>
+                          <p className="font-medium text-foreground">{soDetails.project_name || 'N/A'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-background px-4 py-3">
+                        <UserCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary/70" />
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">SO POC</p>
+                          <p className="font-medium text-foreground">{soDetails.client_order_ref || 'N/A'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-background px-4 py-3">
+                        <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary/70" />
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">Order Status</p>
+                          <p className="font-medium text-foreground">{formatOrderState(soDetails.order_state) || 'N/A'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-background px-4 py-3 md:col-span-2">
+                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary/70" />
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">Delivery Address</p>
+                          <p className="font-medium text-foreground">
+                            {[soDetails.address_line_1, soDetails.address_line_2, soDetails.city, soDetails.state, soDetails.pincode]
+                              .filter(Boolean)
+                              .join(', ') || 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
                 {/* Sales Order */}
                 <div className="space-y-2">
                   <Label>
@@ -179,6 +320,37 @@ const SubmitPage = () => {
                   />
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Repair Reference</Label>
+                    <Input
+                      type="text"
+                      value={repairReference}
+                      onChange={(e) => setRepairReference(e.target.value)}
+                      placeholder="Enter repair reference"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Expected Delivery</Label>
+                    <Input
+                      type="date"
+                      value={expectedDelivery}
+                      onChange={(e) => setExpectedDelivery(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>DO Number</Label>
+                    <Input
+                      type="text"
+                      value={doNumber}
+                      onChange={(e) => setDoNumber(e.target.value)}
+                      placeholder="Enter delivery order number"
+                    />
+                  </div>
+                </div>
+
                 {/* Submit Buttons */}
                 <div className="flex gap-4 pt-4 border-t border-border/50">
                   <Button
@@ -192,7 +364,7 @@ const SubmitPage = () => {
                   </Button>
                   <Button
                     type="submit"
-                    disabled={loading || bucket.length === 0}
+                    disabled={loading || detailsLoading || bucket.length === 0 || !soDetails}
                     size="lg"
                     className="flex-1"
                   >
@@ -253,9 +425,9 @@ const SubmitPage = () => {
                           x{item.quantity}
                         </div>
                       </div>
-                      {item.responsible_department && (
-                        <div className="text-muted-foreground flex items-center gap-1 mt-1.5 pt-1.5 border-t border-border/30">
-                          <span className="scale-75 origin-left">🏢</span> Dept: {item.responsible_department}
+                      {item.component_status && (
+                        <div className="text-[11px] text-muted-foreground">
+                          Component Status: <span className="text-foreground">{item.component_status}</span>
                         </div>
                       )}
                     </div>

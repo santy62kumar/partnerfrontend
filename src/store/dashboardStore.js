@@ -1,12 +1,18 @@
 import { create } from 'zustand';
 import { JOB_STATUS } from '@utils/constants';
 
+const JOBS_TTL = 90_000;
+const JOB_DETAIL_TTL = 300_000;
+const MAX_JOB_DETAIL_CACHE = 20;
+
 export const useDashboardStore = create((set, get) => ({
   // State
   jobs: [],
   selectedJob: null,
   activeFilter: JOB_STATUS.IN_PROGRESS,
-  
+  lastFetched: null,
+  jobDetailCache: {},
+
   stats: {
     completedJobs: 0,
     inProgressJobs: 0,
@@ -19,9 +25,34 @@ export const useDashboardStore = create((set, get) => ({
 
   // Actions
   setJobs: (jobs) => {
-    set({ jobs });
-    // Calculate stats when jobs are set
+    set({ jobs, lastFetched: Date.now() });
     get().calculateStats();
+  },
+
+  isJobsStale: () => {
+    const { lastFetched } = get();
+    return !lastFetched || Date.now() - lastFetched > JOBS_TTL;
+  },
+
+  cacheJobDetail: (jobId, job, progress) => {
+    set((state) => {
+      const updated = { ...state.jobDetailCache, [jobId]: { job, progress, fetchedAt: Date.now() } };
+      const entries = Object.entries(updated);
+      if (entries.length > MAX_JOB_DETAIL_CACHE) {
+        entries.sort((a, b) => a[1].fetchedAt - b[1].fetchedAt);
+        entries.splice(0, entries.length - MAX_JOB_DETAIL_CACHE);
+        return { jobDetailCache: Object.fromEntries(entries) };
+      }
+      return { jobDetailCache: updated };
+    });
+  },
+
+  getJobDetailFromCache: (jobId) => {
+    const { jobDetailCache } = get();
+    const entry = jobDetailCache[jobId];
+    if (!entry) return null;
+    if (Date.now() - entry.fetchedAt > JOB_DETAIL_TTL) return null;
+    return entry;
   },
 
   setSelectedJob: (job) => set({ selectedJob: job }),
@@ -35,10 +66,6 @@ export const useDashboardStore = create((set, get) => ({
   // Calculate statistics from jobs
   calculateStats: () => {
     const { jobs } = get();
-    
-    const createdJobs = jobs.filter(
-      (job) => job.status === JOB_STATUS.CREATED
-    ).length;
     
     const completedJobs = jobs.filter(
       (job) => job.status === JOB_STATUS.COMPLETED
@@ -113,7 +140,7 @@ export const useDashboardStore = create((set, get) => ({
 
   getJobById: (jobId) => {
     const { jobs } = get();
-    return jobs.find((job) => job.id === parseInt(jobId));
+    return jobs.find((job) => job.id === Number.parseInt(jobId));
   },
 
   getStats: () => get().stats,

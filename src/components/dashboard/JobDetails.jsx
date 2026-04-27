@@ -3,6 +3,7 @@ import Card from '@components/common/Card';
 import { formatters } from '@utils/formatters';
 import { JOB_STATUS_COLORS, JOB_STATUS_LABELS } from '@utils/constants';
 import { useToast } from '@hooks/useToast';
+import { useAuthStore } from '@/store/authStore';
 import {
   IoPersonOutline,
   IoReaderOutline,
@@ -16,6 +17,8 @@ import {
 
 const JobDetails = ({ job }) => {
   const toast = useToast();
+  const user = useAuthStore((state) => state.user);
+  const isInternal = user?.is_internal;
 
   const copyToClipboard = async (value, label) => {
     if (!value) return;
@@ -44,17 +47,20 @@ const JobDetails = ({ job }) => {
         <button
           type="button"
           className="line-clamp-3 text-left break-words hover:text-primary transition-colors"
-          title={job.address || 'N/A'}
-          onClick={() => copyToClipboard(job.address, 'Address')}
+          title={[job.address_line_1, job.address_line_2, job.city, job.state, job.pincode].filter(Boolean).join(', ')}
+          onClick={() => copyToClipboard([job.address_line_1, job.address_line_2, job.city, job.state, job.pincode].filter(Boolean).join(', '), 'Address')}
         >
-          {job.address || 'N/A'}
+          {[job.address_line_1, job.address_line_2].filter(Boolean).join(', ') || 'N/A'}
+          {(job.city || job.state || job.pincode) && (
+            <>
+              <br />
+              <span className="text-xs text-muted-foreground">
+                {[job.city, job.state, job.pincode].filter(Boolean).join(', ')}
+              </span>
+            </>
+          )}
         </button>
       ),
-      icon: IoLocationOutline,
-    },
-    {
-      label: 'Pincode',
-      value: job.pincode || 'N/A',
       icon: IoLocationOutline,
     },
     {
@@ -62,11 +68,11 @@ const JobDetails = ({ job }) => {
       value: job.size || 'N/A',
       icon: IoResizeOutline,
     },
-    {
+    ...(!isInternal ? [{
       label: 'Rate',
       value: formatters.currency(job.rate),
       icon: IoCashOutline,
-    },
+    }] : []),
     {
       label: 'Google Map Link',
       value: job.google_map_link ? (
@@ -107,12 +113,14 @@ const JobDetails = ({ job }) => {
                 {JOB_STATUS_LABELS[job.status] || job.status}
               </span>
             </div>
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground">Payout</p>
-              <p className="text-sm font-semibold text-primary">
-                {formatters.currency(job.rate)}
-              </p>
-            </div>
+            {!isInternal && (
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Payout</p>
+                <p className="text-sm font-semibold text-primary">
+                  {formatters.currency(job.rate)}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -133,10 +141,10 @@ const JobDetails = ({ job }) => {
                   {detail.value}
                 </div>
               </div>
-              {detail.label === 'Address' && job.address && (
+              {detail.label === 'Address' && (job.address_line_1 || job.address_line_2 || job.city) && (
                 <button
                   type="button"
-                  onClick={() => copyToClipboard(job.address, 'Address')}
+                  onClick={() => copyToClipboard([job.address_line_1, job.address_line_2, job.city, job.state, job.pincode].filter(Boolean).join(', '), 'Address')}
                   className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-card rounded-md transition-colors"
                   aria-label="Copy address"
                   title="Copy address"

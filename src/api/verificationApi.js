@@ -4,7 +4,6 @@ export const verificationApi = {
   // Get verification status
   getVerificationStatus: async () => {
     const response = await apiClient.get('/verification/status');
-    console.log("Verification Status Responsesss:", response.data);
     return response.data;
   },
 

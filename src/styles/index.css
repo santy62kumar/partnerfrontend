@@ -311,31 +311,27 @@
   /* ── Auth Surface ────────────────────────────────────── */
   .auth-page {
     @apply min-h-screen flex items-center justify-center p-4 relative overflow-hidden;
-  }
-
-  .auth-page::before,
-  .auth-page::after {
-    content: "";
-    position: absolute;
-    border-radius: 9999px;
-    filter: blur(36px);
-    pointer-events: none;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -10%, color-mix(in srgb, var(--color-primary) 14%, transparent), transparent),
+      var(--color-background);
   }
 
   .auth-page::before {
-    width: 280px;
-    height: 280px;
-    top: -90px;
-    left: -70px;
-    background: color-mix(in srgb, var(--color-primary) 24%, transparent);
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      color-mix(in srgb, var(--color-border) 55%, transparent) 1px,
+      transparent 0
+    );
+    background-size: 26px 26px;
+    pointer-events: none;
+    opacity: 0.45;
   }
 
   .auth-page::after {
-    width: 240px;
-    height: 240px;
-    bottom: -80px;
-    right: -60px;
-    background: color-mix(in srgb, var(--color-brand) 20%, transparent);
+    display: none;
   }
 
   .auth-container {
@@ -343,10 +339,34 @@
   }
 
   .auth-card {
-    background: color-mix(in srgb, var(--color-card) 92%, white);
-    border: 1px solid color-mix(in srgb, var(--color-border) 78%, white);
+    background: var(--color-card);
+    border: 1px solid color-mix(in srgb, var(--color-border) 80%, white);
     box-shadow: var(--shadow-elevated);
-    backdrop-filter: blur(3px);
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .auth-card-header {
+    padding: 2rem 1.75rem 2.25rem;
+    background: linear-gradient(145deg, #1a0a0a 0%, #3D1D1C 45%, #6b4b41 100%);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .auth-card-header::before {
+    content: "";
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 160px;
+    height: 160px;
+    border-radius: 9999px;
+    background: radial-gradient(circle, rgba(196,175,158,0.15), transparent 70%);
+    pointer-events: none;
+  }
+
+  .auth-card-body {
+    padding: 1.75rem;
   }
 
   .surface-glass {

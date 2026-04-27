@@ -10,7 +10,6 @@ import {
 
 const ChecklistStats = () => {
   const stats = useChecklistStore(state => state.stats);
-  console.log('ChecklistStats - stats:', stats);
 
   const statCards = [
     {

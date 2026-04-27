@@ -1,6 +1,3 @@
-
-
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import VerificationStepper from '@components/verification/VerificationStepper';
@@ -37,7 +34,6 @@ const VerificationPage = () => {
     setLoading(true);
     try {
       const status = await verificationApi.getVerificationStatus();
-      console.log("Fetched Verification Status:", status);
       setVerificationStatus(status);
 
       if (status.is_pan_verified !== true) {
@@ -47,8 +43,8 @@ const VerificationPage = () => {
       } else {
         setCurrentStep(VERIFICATION_STEPS.DOCUMENT);
       }
-    } catch (error) {
-      console.error('Failed to fetch verification status:', error);
+    } catch {
+      // Error already handled by axios interceptor; page stays in loading=false state
     } finally {
       setLoading(false);
     }
@@ -58,8 +54,8 @@ const VerificationPage = () => {
     try {
       const status = await verificationApi.getVerificationStatus();
       setVerificationStatus(status);
-    } catch (error) {
-      console.error('Failed to fetch verification status:', error);
+    } catch {
+      // Non-fatal: step navigation still proceeds
     }
     nextStep();
   };
@@ -68,8 +64,8 @@ const VerificationPage = () => {
     try {
       const status = await verificationApi.getVerificationStatus();
       setVerificationStatus(status);
-    } catch (error) {
-      console.error('Failed to fetch verification status:', error);
+    } catch {
+      // Non-fatal: step navigation still proceeds
     }
     nextStep();
   };

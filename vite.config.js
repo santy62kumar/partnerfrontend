@@ -18,6 +18,9 @@ export default defineConfig({
       '@assets': path.resolve(__dirname, './src/assets'),
     },
   },
+  build: {
+    sourcemap: false, // Don't expose source maps in production
+  },
   server: {
     port: 3000,
     open: true,

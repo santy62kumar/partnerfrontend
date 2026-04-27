@@ -4,23 +4,22 @@ import Button from '@components/common/Button';
 import Loader from '@components/common/Loader';
 import Card from '@components/common/Card';
 import JobDetails from '@components/dashboard/JobDetails';
-import ProgressUpload from '@components/dashboard/ProgressUpload';
-import ProgressTimeline from '@components/dashboard/ProgressTimeline';
 import { useJobDetail, useJobProgress } from '@hooks/useQueryHooks';
-import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@hooks/useToast';
 import { formatters } from '@utils/formatters';
 import { JOB_STATUS_COLORS, JOB_STATUS_LABELS } from '@utils/constants';
 import { IoArrowBackOutline } from 'react-icons/io5';
+import BillingSection from '@components/dashboard/BillingSection';
+import { useAuthStore } from '@store/authStore';
 
 const JobDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const queryClient = useQueryClient();
-
   const { data: job, isLoading: jobLoading, error: jobError } = useJobDetail(id);
   const { data: progress = [] } = useJobProgress(id);
+  const user = useAuthStore((s) => s.user);
+  const isExternalIP = user?.is_internal === false;
 
   React.useEffect(() => {
     if (jobError) {
@@ -30,11 +29,6 @@ const JobDetailPage = () => {
       }
     }
   }, [jobError, navigate, toast]);
-
-  const handleUploadSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: ['partner-job-progress', id] });
-    queryClient.invalidateQueries({ queryKey: ['partner-job', id] });
-  };
 
   if (jobLoading) {
     return (
@@ -96,27 +90,6 @@ const JobDetailPage = () => {
                 : 'No uploads yet'}
             </p>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="dashboard-hero-stat">
-              <p className="text-xs text-muted-foreground">Delivery Date</p>
-              <p className="text-base font-semibold text-foreground">
-                {formatters.date(job.delivery_date) || 'Not set'}
-              </p>
-            </div>
-            <div className="dashboard-hero-stat">
-              <p className="text-xs text-muted-foreground">Checklists</p>
-              <p className="text-base font-semibold text-foreground">
-                {checklists.length}
-              </p>
-            </div>
-            <div className="dashboard-hero-stat">
-              <p className="text-xs text-muted-foreground">Progress Updates</p>
-              <p className="text-base font-semibold text-foreground">
-                {latestFirstProgress.length}
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -159,12 +132,7 @@ const JobDetailPage = () => {
         </div>
 
         <div className="space-y-6">
-          <ProgressUpload
-            jobId={job.id}
-            onUploadSuccess={handleUploadSuccess}
-          />
-
-          <ProgressTimeline progress={latestFirstProgress} />
+          {isExternalIP && <BillingSection job={job} />}
         </div>
       </div>
     </div>

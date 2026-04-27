@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@components/ui/card';
 import { formatters } from '@utils/formatters';
 import { JOB_STATUS, JOB_STATUS_COLORS, JOB_STATUS_LABELS } from '@utils/constants';
+import { useAuthStore } from '@/store/authStore';
 import {
   IoLocationOutline,
   IoCashOutline,
@@ -15,6 +16,7 @@ import {
 
 const JobCard = ({ job }) => {
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
 
   const getDueMeta = (deliveryDate) => {
     if (!deliveryDate) {
@@ -104,12 +106,14 @@ const JobCard = ({ job }) => {
             <span className="truncate">{job.city || 'N/A'}</span>
           </div>
 
-          <div className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium bg-secondary/60 text-muted-foreground max-w-[calc(50%-0.25rem)] sm:max-w-none">
-            <IoCashOutline size={14} className="shrink-0" />
-            <span className="font-semibold text-primary truncate">
-              {formatters.currency(job.rate)}
-            </span>
-          </div>
+          {!user?.is_internal && (
+            <div className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium bg-secondary/60 text-muted-foreground max-w-[calc(50%-0.25rem)] sm:max-w-none">
+              <IoCashOutline size={14} className="shrink-0" />
+              <span className="font-semibold text-primary truncate">
+                {formatters.currency(job.rate)}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="mt-auto pt-3 border-t border-border/80 flex items-center justify-between gap-3 text-xs">

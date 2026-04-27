@@ -9,6 +9,7 @@ export const authApi = {
       last_name: userData.lastName,
       city: userData.city,
       pincode: userData.pincode,
+      is_internal: userData.isInternal || false,
     });
     return response.data;
   },
@@ -53,6 +54,11 @@ export const authApi = {
   // Logout
   logout: async () => {
     const response = await apiClient.post('/auth/logout');
+    return response.data;
+  },
+
+  me: async () => {
+    const response = await apiClient.get('/auth/me');
     return response.data;
   },
 };

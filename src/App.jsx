@@ -1,6 +1,5 @@
 import { Toaster } from 'react-hot-toast';
 import AppRoutes from './routes/AppRoutes';
-import { QueryClient } from '@tanstack/react-query';
 
 function App() {
   return (

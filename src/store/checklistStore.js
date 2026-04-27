@@ -55,7 +55,6 @@ const useChecklistStore = create(
         
         try {
           const data = await checklistApi.getChecklist(jobId, checklistId);
-          console.log('Fetched checklist data:', data);
           
           set({
             checklist: data.checklist,
@@ -134,6 +133,23 @@ saveChanges: async () => {
     return;
   }
   
+  // Validate all items being checked require photo and notes
+  for (const [id, changes] of pendingChanges.entries()) {
+    if (changes.checked === true) {
+      const item = items.find(i => i.id === Number.parseInt(id));
+      if (!item?.document_link) {
+        const errorMsg = `Item "${item?.text || 'Unknown'}" requires a photo before it can be marked complete.`;
+        set({ error: errorMsg });
+        throw new Error(errorMsg);
+      }
+      if (!item?.comment?.trim()) {
+        const errorMsg = `Item "${item?.text || 'Unknown'}" requires notes/comment before it can be marked complete.`;
+        set({ error: errorMsg });
+        throw new Error(errorMsg);
+      }
+    }
+  }
+  
   set({ isSaving: true, error: null });
   
   const updates = Array.from(pendingChanges.entries()).map(([id, changes]) => ({
@@ -147,8 +163,6 @@ saveChanges: async () => {
       checklist.id,
       { updates }
     );
-    
-    // ✅ Keep optimistic items, just update stats from server
     set({
       items: items,  // Keep current items (already updated optimistically)
       stats: {

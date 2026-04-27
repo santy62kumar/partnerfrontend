@@ -1,11 +1,11 @@
-// API Base URL
-const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://adminapi.modula.in/api/v1';
+
+const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
 // Backward compatibility: some envs still point to .../api/v1/auth.
 export const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, '').replace(/\/auth$/, '');
 
 // App Info
-export const APP_NAME = import.meta.env.VITE_APP_NAME || 'Modula ';
+export const APP_NAME = import.meta.env.VITE_APP_NAME || 'Modula';
 
 // Job Status
 export const JOB_STATUS = {

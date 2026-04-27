@@ -53,6 +53,49 @@ export const useUploadProgress = () => {
     });
 };
 
+export const useAttendance = () => {
+    return useQuery({
+        queryKey: ['partner-attendance'],
+        queryFn: async () => {
+            const response = await dashboardApi.getAttendance();
+            return response.records || [];
+        },
+        staleTime: 60 * 1000,
+    });
+};
+
+export const useRecordAttendance = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data) => dashboardApi.recordAttendance(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['partner-attendance'] });
+        },
+    });
+};
+
+export const useBilling = (jobId, enabled = true) => {
+    return useQuery({
+        queryKey: ['partner-billing', jobId],
+        queryFn: async () => {
+            const response = await dashboardApi.getBilling(jobId);
+            return response;
+        },
+        enabled: !!jobId && enabled,
+        staleTime: 60 * 1000,
+    });
+};
+
+export const useRequestInvoice = (jobId) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: () => dashboardApi.requestInvoice(jobId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['partner-billing', jobId] });
+        },
+    });
+};
+
 // ─── BOM / Site Requisite ────────────────────────────────────────
 
 export const useBOMHistory = (limit = 100, offset = 0) => {

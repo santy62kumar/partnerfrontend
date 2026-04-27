@@ -1,23 +1,27 @@
 // components/Checklist/ChecklistItem.jsx
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import useChecklistStore from '../../store/checklistStore';
+import toast from 'react-hot-toast';
 import {
   CheckCircleIcon,
   DocumentIcon,
-  PaperClipIcon,
-  XCircleIcon
+  PaperClipIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 
 const ChecklistItem = ({ item }) => {
   const [isEditingComment, setIsEditingComment] = useState(false);
   const [commentValue, setCommentValue] = useState(item.comment || '');
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
 
   const toggleCheckbox = useChecklistStore(state => state.toggleCheckbox);
-  const updateStatus = useChecklistStore(state => state.updateStatus);
   const updateComment = useChecklistStore(state => state.updateComment);
   const uploadDocument = useChecklistStore(state => state.uploadDocument);
+
+  useEffect(() => {
+    setCommentValue(item.comment || '');
+  }, [item.comment]);
 
   const statusConfig = {
     pending: {
@@ -32,14 +36,26 @@ const ChecklistItem = ({ item }) => {
       label: 'Approved',
       className: 'badge-success',
     },
+    rejected: {
+      label: 'Rejected',
+      className: 'badge-destructive',
+    },
   };
 
   const handleCheckboxChange = () => {
+    // Prevent checking if photo or notes are missing
+    if (!item.checked) {
+      if (!item.document_link) {
+        toast.error('Please upload a photo before marking this item complete.');
+        return;
+      }
+      if (!item.comment || item.comment.trim() === '') {
+        toast.error('Please add notes/comment before marking this item complete.');
+        return;
+      }
+    }
+    
     toggleCheckbox(item.id);
-  };
-
-  const handleStatusChange = (e) => {
-    updateStatus(item.id, e.target.value);
   };
 
   const handleCommentSave = () => {
@@ -56,14 +72,16 @@ const ChecklistItem = ({ item }) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    setIsUploading(true);
     try {
       await uploadDocument(item.id, file);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    } catch (error) {
-      console.error('Upload failed:', error);
-      alert('Failed to upload document');
+    } catch {
+      toast.error('Failed to upload document. Please try again.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -71,6 +89,7 @@ const ChecklistItem = ({ item }) => {
   const getStatusKey = (item) => {
     if (item.is_approved) return 'is_approved';
     if (item.checked) return 'checked';
+    if (item.admin_comment) return 'rejected';
     return 'pending';
   };
 
@@ -127,13 +146,20 @@ const ChecklistItem = ({ item }) => {
                 onChange={handleFileUpload}
                 className="hidden"
                 id={`file-${item.id}`}
+                disabled={isUploading}
               />
               <label
                 htmlFor={`file-${item.id}`}
-                className="flex items-center space-x-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                className={`flex items-center space-x-1 text-xs ${
+                  isUploading 
+                    ? 'text-muted-foreground cursor-not-allowed' 
+                    : 'text-muted-foreground hover:text-foreground cursor-pointer'
+                }`}
               >
                 <PaperClipIcon className="h-4 w-4" />
-                <span>{item.document_link ? 'Replace' : 'Upload'}</span>
+                <span>
+                  {isUploading ? 'Uploading...' : (item.document_link ? 'Replace' : 'Upload')}
+                </span>
               </label>
             </div>
           </div>
@@ -184,6 +210,20 @@ const ChecklistItem = ({ item }) => {
               </div>
             )}
           </div>
+
+          {item.admin_comment && (
+            <div className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-red-700">
+                Admin Feedback
+              </p>
+              <p className="mt-1 text-sm text-red-700">{item.admin_comment}</p>
+              {!item.checked && !item.is_approved && (
+                <p className="mt-2 text-xs text-red-600">
+                  Fix the note or photo, then check this item again to send it back for review.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

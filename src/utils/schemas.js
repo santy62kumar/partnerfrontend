@@ -27,6 +27,7 @@ export const registerSchema = z.object({
   lastName: nameSchema,
   city: z.string().min(1, 'City is required').max(100, 'City name is too long'),
   pincode: pincodeSchema,
+  isInternal: z.boolean().optional().default(false),
 });
 
 export const otpSchema = z.object({

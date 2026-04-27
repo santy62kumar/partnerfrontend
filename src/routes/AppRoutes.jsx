@@ -23,16 +23,39 @@ import HistoryPage from '../pages/HistoryPage';
 function AppRoutes() {
   useEffect(() => {
     const hydrateSession = async () => {
-      try {
-        const verifyRes = await apiClient.get('/auth/verify-token');
-        if (verifyRes.data.valid) {
-          const res = await apiClient.get('/auth/me');
-          useAuthStore.getState().setUser(res.data);
-        } else {
-          useAuthStore.getState().clearAuth();
+      const { setUser, clearAuth, hydrateUser } = useAuthStore.getState();
+
+      // Phase 1: Instant restore from cache (synchronous)
+      const cachedUser = hydrateUser();
+
+      // Background verify — refresh the profile silently
+      const verifyInBackground = async () => {
+        try {
+          const verifyRes = await apiClient.get('/auth/verify-token');
+          if (verifyRes.data.valid) {
+            const res = await apiClient.get('/auth/me');
+            setUser(res.data);
+          } else {
+            clearAuth();
+          }
+        } catch {
+          clearAuth();
         }
-      } catch {
-        useAuthStore.getState().clearAuth();
+      };
+
+      if (cachedUser) {
+        // UI is already showing — verify silently (don't block)
+        verifyInBackground();
+      } else {
+        // No cache (first login) — must wait, with timeout
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Session check timed out')), 6000)
+        );
+        try {
+          await Promise.race([verifyInBackground(), timeoutPromise]);
+        } catch {
+          clearAuth();
+        }
       }
     };
 
@@ -58,9 +81,7 @@ function AppRoutes() {
             path="/dashboard/jobs/:jobId/checklist/:checklistId"
             element={<ChecklistPage />}
           />
-          {/* <Route path="/" element={<Navigate to="/site-requisite" replace />} /> */}
           <Route path="/site-requisite" element={<SiteRequisitePage />} />
-          {/* <Route path="/site-requisite" element={<SiteRequisitePage />} /> */}
 
           <Route path="/site-requisite/bucket" element={<BucketPage />} />
           <Route path="/site-requisite/bucket/submit" element={<SubmitPage />} />

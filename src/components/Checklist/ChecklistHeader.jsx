@@ -1,9 +1,10 @@
 // components/Checklist/ChecklistHeader.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { 
+  ArrowLeftIcon } from '@heroicons/react/24/outline';
 
-const ChecklistHeader = ({ jobTitle, checklistName, checklistDescription }) => {
+const ChecklistHeader = ({  checklistName, checklistDescription }) => {
   const navigate = useNavigate();
 
   const handleBack = () => {

@@ -3,14 +3,14 @@ import { formatters } from '@utils/formatters';
 import { CheckCircle2, Clock, IndianRupee, Trophy } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 
-const StatsCards = ({ stats, totalJobs = 0, completionRate = 0 }) => {
+const StatsCards = ({ stats, totalJobs = 0, completionRate = 0, isInternal = false }) => {
   const averageEarning = stats.completedJobs
     ? stats.totalEarnings / stats.completedJobs
     : 0;
 
   const backlogJobs = Math.max(totalJobs - stats.completedJobs - stats.inProgressJobs, 0);
 
-  const cards = [
+  const baseCards = [
     {
       title: 'In Progress',
       value: stats.inProgressJobs,
@@ -25,21 +25,29 @@ const StatsCards = ({ stats, totalJobs = 0, completionRate = 0 }) => {
       icon: CheckCircle2,
       iconColor: 'text-success',
     },
-    {
-      title: 'Earnings',
-      value: formatters.currency(stats.totalEarnings),
-      subtitle: `${formatters.currency(averageEarning)} avg`,
-      icon: IndianRupee,
-      iconColor: 'text-foreground',
-    },
-    {
-      title: 'Incentives',
-      value: formatters.currency(stats.totalIncentives),
-      subtitle: 'Total pool',
-      icon: Trophy,
-      iconColor: 'text-primary',
-    },
   ];
+
+  // Only show Earnings and Incentives for external users (members have is_internal=true)
+  const financialCards = !isInternal
+    ? [
+        {
+          title: 'Earnings',
+          value: formatters.currency(stats.totalEarnings),
+          subtitle: `${formatters.currency(averageEarning)} avg`,
+          icon: IndianRupee,
+          iconColor: 'text-foreground',
+        },
+        {
+          title: 'Incentives',
+          value: formatters.currency(stats.totalIncentives),
+          subtitle: 'Total pool',
+          icon: Trophy,
+          iconColor: 'text-primary',
+        },
+      ]
+    : [];
+
+  const cards = [...baseCards, ...financialCards];
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

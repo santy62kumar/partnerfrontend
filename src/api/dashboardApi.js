@@ -57,4 +57,50 @@ export const dashboardApi = {
     const response = await apiClient.get(`/dashboard/jobs/${jobId}/progress`);
     return response.data;
   },
+
+  recordAttendance: async ({ latitude, longitude, manualLocation, photoFile }) => {
+    const formData = new FormData();
+    formData.append('latitude', String(latitude));
+    formData.append('longitude', String(longitude));
+    if (manualLocation?.trim()) {
+      formData.append('manual_location', manualLocation.trim());
+    }
+    formData.append('photo', photoFile, photoFile?.name || `attendance-${Date.now()}.jpg`);
+    const response = await apiClient.post('/dashboard/attendance', formData);
+    return response.data;
+  },
+
+  getAttendance: async () => {
+    const response = await apiClient.get('/dashboard/attendance');
+    return response.data;
+  },
+
+  getBilling: async (jobId) => {
+    const response = await apiClient.get(`/dashboard/jobs/${jobId}/billing`);
+    return response.data;
+  },
+
+  requestInvoice: async (jobId) => {
+    const response = await apiClient.post(`/dashboard/jobs/${jobId}/invoice-request`);
+    return response.data;
+  },
+
+  requestAdditionalInvoice: async (jobId, data = {}) => {
+    const response = await apiClient.post(`/dashboard/jobs/${jobId}/invoice-requests`, data);
+    return response.data;
+  },
+
+  downloadInvoice: async (jobId, jobName) => {
+    const response = await apiClient.get(`/dashboard/jobs/${jobId}/invoice-request/download`, {
+      responseType: 'blob',
+    });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `billing_invoice_${jobName || jobId}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode?.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
 };
