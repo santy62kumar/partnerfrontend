@@ -94,13 +94,13 @@ export const dashboardApi = {
     const response = await apiClient.get(`/dashboard/jobs/${jobId}/invoice-request/download`, {
       responseType: 'blob',
     });
-    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const url = window.URL.createObjectURL(response.data);
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute('download', `billing_invoice_${jobName || jobId}.xlsx`);
     document.body.appendChild(link);
     link.click();
     link.parentNode?.removeChild(link);
-    window.URL.revokeObjectURL(url);
+    setTimeout(() => window.URL.revokeObjectURL(url), 10000);
   },
 };

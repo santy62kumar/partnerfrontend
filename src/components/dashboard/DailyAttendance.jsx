@@ -4,7 +4,7 @@ import Button from '@components/common/Button';
 import { useAttendance, useRecordAttendance } from '@hooks/useQueryHooks';
 import { useToast } from '@hooks/useToast';
 import { formatters } from '@utils/formatters';
-import { IoLocationOutline, IoTimeOutline, IoCallOutline, IoCameraOutline, IoCloseCircleOutline } from 'react-icons/io5';
+import { IoLocationOutline, IoTimeOutline, IoCallOutline, IoCameraOutline, IoCloseCircleOutline, IoCameraReverseOutline } from 'react-icons/io5';
 
 const DailyAttendance = () => {
   const toast = useToast();
@@ -14,6 +14,7 @@ const DailyAttendance = () => {
   const [locating, setLocating] = useState(false);
   const [openingCamera, setOpeningCamera] = useState(false);
   const [manualLocation, setManualLocation] = useState('');
+  const [facingMode, setFacingMode] = useState('environment');
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
@@ -32,7 +33,7 @@ const DailyAttendance = () => {
     if (photoPreview) URL.revokeObjectURL(photoPreview);
   }, [photoPreview]);
 
-  const openCamera = async () => {
+  const openCamera = async (mode = facingMode) => {
     if (!navigator.mediaDevices?.getUserMedia) {
       toast.error('Camera is not supported on this device/browser');
       return;
@@ -41,7 +42,7 @@ const DailyAttendance = () => {
     setOpeningCamera(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
+        video: { facingMode: { ideal: mode } },
         audio: false,
       });
       streamRef.current = stream;
@@ -57,6 +58,13 @@ const DailyAttendance = () => {
     } finally {
       setOpeningCamera(false);
     }
+  };
+
+  const handleSwitchCamera = async () => {
+    const next = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(next);
+    stopCameraStream();
+    await openCamera(next);
   };
 
   const handleCapturePhoto = async () => {
@@ -179,6 +187,10 @@ const DailyAttendance = () => {
               <div className="flex gap-2">
                 <Button type="button" variant="primary" className="flex-1" onClick={handleCapturePhoto}>
                   Capture
+                </Button>
+                <Button type="button" className="flex-1" onClick={handleSwitchCamera} disabled={openingCamera}>
+                  <IoCameraReverseOutline size={16} />
+                  {facingMode === 'environment' ? 'Front' : 'Back'}
                 </Button>
                 <Button type="button" className="flex-1" onClick={handleCloseCamera}>
                   Cancel

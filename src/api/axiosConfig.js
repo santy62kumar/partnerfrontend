@@ -95,7 +95,7 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
     if (error.code === 'ECONNABORTED' || /timeout/i.test(error.message || '')) {
       return Promise.reject({
-        message: 'Request timed out. The BOM fetch is taking longer than expected, so please try again in a moment.',
+        message: 'Request timed out. please try again in a moment.',
       });
     }
 
