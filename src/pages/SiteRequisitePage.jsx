@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, ShoppingCart, Building2, FolderOpen, MapPin, UserCircle2, BadgeCheck, AlertCircle } from 'lucide-react';
+import { Search, ShoppingCart, Building2, FolderOpen, MapPin, UserCircle2, BadgeCheck, AlertCircle, Clock } from 'lucide-react';
 import BOMTreeNode from '../components/BOMTreeNode';
 import AddToBucketModal from '../components/AddToBucketModal';
 import useRequisiteStore from '../store/requisiteStore';
@@ -14,6 +14,7 @@ const SiteRequisitePage = () => {
   const navigate = useNavigate();
   const [salesOrder, setSalesOrder] = useState('');
   const [cabinetPosition, setCabinetPosition] = useState('');
+  const [allCabinets, setAllCabinets] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
@@ -39,7 +40,7 @@ const SiteRequisitePage = () => {
   const handleFetchBOM = async (e) => {
     e.preventDefault();
     const normalizedSalesOrder = salesOrder.trim();
-    const normalizedCabinetPosition = cabinetPosition.trim();
+    const normalizedCabinetPosition = allCabinets ? 'ALL' : cabinetPosition.trim();
 
     if (!normalizedSalesOrder || !normalizedCabinetPosition) {
       setError('Sales order and cabinet position are required.');
@@ -92,18 +93,28 @@ const SiteRequisitePage = () => {
           <h1 className="text-3xl font-bold font-heading text-foreground">Site Requisite</h1>
           <p className="text-muted-foreground mt-1">Search and manage BOM for your site</p>
         </div>
-        <Button
-          onClick={() => navigate('/site-requisite/bucket')}
-          className="relative h-11 px-6 shadow-sm"
-        >
-          <ShoppingCart className="w-5 h-5 mr-2" />
-          Bucket
-          {bucket.length > 0 && (
-            <span className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-background">
-              {bucket.length}
-            </span>
-          )}
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => navigate('/site-requisite-history')}
+            className="h-11 px-6"
+          >
+            <Clock className="w-5 h-5 mr-2" />
+            History
+          </Button>
+          <Button
+            onClick={() => navigate('/site-requisite/bucket')}
+            className="relative h-11 px-6 shadow-sm"
+          >
+            <ShoppingCart className="w-5 h-5 mr-2" />
+            Bucket
+            {bucket.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-background">
+                {bucket.length}
+              </span>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Search Form */}
@@ -122,13 +133,24 @@ const SiteRequisitePage = () => {
               />
             </div>
             <div className="flex-1 w-full space-y-2">
-              <Label htmlFor="cabinetPosition">Cabinet Position</Label>
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="cabinetPosition">Cabinet Position</Label>
+                <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={allCabinets}
+                    onChange={(e) => setAllCabinets(e.target.checked)}
+                  />
+                  All cabinets
+                </label>
+              </div>
               <Input
                 id="cabinetPosition"
                 name="cabinetPosition"
                 placeholder="Enter Cabinet Position"
-                value={cabinetPosition}
+                value={allCabinets ? 'ALL' : cabinetPosition}
                 onChange={(e) => setCabinetPosition(e.target.value)}
+                disabled={allCabinets}
                 required
               />
             </div>

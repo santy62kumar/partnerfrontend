@@ -18,6 +18,8 @@ import SiteRequisitePage from '../pages/SiteRequisitePage';
 import BucketPage from '../pages/BucketPage';
 import SubmitPage from '../pages/SubmitPage';
 import HistoryPage from '../pages/HistoryPage';
+import SiteGRNPage from '../pages/SiteGRNPage';
+import AttendancePage from '../pages/AttendancePage';
 
 
 function AppRoutes() {
@@ -86,6 +88,8 @@ function AppRoutes() {
           <Route path="/site-requisite/bucket" element={<BucketPage />} />
           <Route path="/site-requisite/bucket/submit" element={<SubmitPage />} />
           <Route path="/site-requisite-history" element={<HistoryPage />} />
+          <Route path="/site-grn" element={<SiteGRNPage />} />
+          <Route path="/attendance" element={<AttendancePage />} />
         </Route>
 
         {/* Default Redirect */}

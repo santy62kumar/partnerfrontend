@@ -62,9 +62,7 @@ export const dashboardApi = {
     const formData = new FormData();
     formData.append('latitude', String(latitude));
     formData.append('longitude', String(longitude));
-    if (manualLocation?.trim()) {
-      formData.append('manual_location', manualLocation.trim());
-    }
+    formData.append('manual_location', manualLocation?.trim() || '');
     formData.append('photo', photoFile, photoFile?.name || `attendance-${Date.now()}.jpg`);
     const response = await apiClient.post('/dashboard/attendance', formData);
     return response.data;

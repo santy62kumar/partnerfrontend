@@ -112,6 +112,10 @@ const DailyAttendance = () => {
       toast.error('Photo is required for attendance');
       return;
     }
+    if (!manualLocation.trim()) {
+      toast.error('Manual location is required for attendance');
+      return;
+    }
 
     setLocating(true);
     let latitude, longitude;
@@ -204,7 +208,7 @@ const DailyAttendance = () => {
 
         <div>
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
-            Manual Location (optional)
+            Manual Location <span className="text-destructive">*</span>
           </label>
           <input
             type="text"
@@ -212,6 +216,7 @@ const DailyAttendance = () => {
             onChange={(e) => setManualLocation(e.target.value)}
             placeholder="Site name, landmark, floor, or area"
             maxLength={255}
+            required
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
           />
         </div>

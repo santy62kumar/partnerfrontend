@@ -25,7 +25,6 @@ const SubmitPage = () => {
   const { bucket, salesOrder, cabinetPosition, soDetails, setSODetails, clearBucket } = useRequisiteStore();
 
   const [srPoc, setSrPoc] = useState('');
-  const [repairReference, setRepairReference] = useState('');
   const [expectedDelivery, setExpectedDelivery] = useState('');
   const [doNumber, setDoNumber] = useState('');
   const [loading, setLoading] = useState(false);
@@ -105,7 +104,6 @@ const SubmitPage = () => {
         sales_order: salesOrder,
         cabinet_position: cabinetPosition,
         sr_poc: srPoc || null,
-        repair_reference: repairReference || null,
         expected_delivery: expectedDelivery || null,
         do_number: doNumber || null,
         items: bucket,
@@ -138,7 +136,7 @@ const SubmitPage = () => {
               Requisite Submitted!
             </h2>
             <p className="text-muted-foreground mb-8">
-              Your site requisite has been created and saved successfully.
+              Your repair order has been created and saved successfully.
             </p>
             <div className="flex flex-col gap-3 w-full">
               <Button
@@ -322,16 +320,6 @@ const SubmitPage = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Repair Reference</Label>
-                    <Input
-                      type="text"
-                      value={repairReference}
-                      onChange={(e) => setRepairReference(e.target.value)}
-                      placeholder="Enter repair reference"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
                     <Label>Expected Delivery</Label>
                     <Input
                       type="date"
@@ -340,7 +328,7 @@ const SubmitPage = () => {
                     />
                   </div>
 
-                  <div className="space-y-2 md:col-span-2">
+                  <div className="space-y-2">
                     <Label>DO Number</Label>
                     <Input
                       type="text"
@@ -376,7 +364,7 @@ const SubmitPage = () => {
                     ) : (
                       <>
                         <Send className="w-4 h-4 mr-2" />
-                        Submit Request
+                        Create Repair Order
                       </>
                     )}
                   </Button>

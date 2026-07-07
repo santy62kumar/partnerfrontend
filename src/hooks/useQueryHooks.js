@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dashboardApi } from '@api/dashboardApi';
 import { bomAPI } from '@api/bomApi';
+import { dailyUpdateApi } from '@api/dailyUpdateApi';
 
 // ─── Dashboard / Jobs ────────────────────────────────────────────
 
@@ -92,6 +93,30 @@ export const useRequestInvoice = (jobId) => {
         mutationFn: () => dashboardApi.requestInvoice(jobId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['partner-billing', jobId] });
+        },
+    });
+};
+
+// ─── Daily Job Updates ───────────────────────────────────────────
+
+export const useDailyUpdates = (jobId) => {
+    return useQuery({
+        queryKey: ['partner-daily-updates', jobId],
+        queryFn: async () => {
+            const response = await dailyUpdateApi.getUpdates(jobId);
+            return response.updates || [];
+        },
+        enabled: !!jobId,
+        staleTime: 60 * 1000,
+    });
+};
+
+export const useSubmitDailyUpdate = (jobId) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data) => dailyUpdateApi.submit({ jobId, ...data }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['partner-daily-updates', jobId] });
         },
     });
 };

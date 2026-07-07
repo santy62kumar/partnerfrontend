@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import StatsCards from '@components/dashboard/StatsCards';
-import DailyAttendance from '@components/dashboard/DailyAttendance';
 import JobFilters from '@components/dashboard/JobFilters';
 import JobList from '@components/dashboard/JobList';
 import Loader from '@components/common/Loader';
@@ -68,8 +67,6 @@ const DashboardPage = () => {
         completionRate={completionRate}
         isInternal={user?.is_internal}
       />
-
-      <DailyAttendance />
 
       <div className="space-y-4 pt-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-1">

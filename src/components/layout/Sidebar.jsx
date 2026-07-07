@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, CheckCircle2, X, FileText, Clock } from 'lucide-react';
+import { Home, CheckCircle2, X, FileText, Camera, Package } from 'lucide-react';
 import { useUIStore } from '@store/uiStore';
 import { Button } from '@components/ui/button';
 
@@ -24,9 +24,14 @@ const Sidebar = () => {
       icon: FileText,
     },
     {
-      name: 'Site Requisites History',
-      path: '/site-requisite-history',
-      icon: Clock,
+      name: 'Attendance',
+      path: '/attendance',
+      icon: Camera,
+    },
+    {
+      name: 'Site GRN',
+      path: '/site-grn',
+      icon: Package,
     },
   ];
 

@@ -31,7 +31,7 @@ export const bomAPI = {
   },
   
   updateStatus: async (soId, status) => {
-    const response = await apiClient.patch(`/dashboard/bom/status/${soId}`,
+    const response = await apiClient.patch(`/dashboard/bom/history/${soId}/status`,
       null,
       { params: { status } }
     );

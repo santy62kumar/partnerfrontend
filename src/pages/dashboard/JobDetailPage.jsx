@@ -10,6 +10,7 @@ import { formatters } from '@utils/formatters';
 import { JOB_STATUS_COLORS, JOB_STATUS_LABELS } from '@utils/constants';
 import { IoArrowBackOutline } from 'react-icons/io5';
 import BillingSection from '@components/dashboard/BillingSection';
+import DailyJobUpdate from '@components/dashboard/DailyJobUpdate';
 import { useAuthStore } from '@store/authStore';
 
 const JobDetailPage = () => {
@@ -133,6 +134,7 @@ const JobDetailPage = () => {
 
         <div className="space-y-6">
           {isExternalIP && <BillingSection job={job} />}
+          <DailyJobUpdate jobId={job.id} />
         </div>
       </div>
     </div>

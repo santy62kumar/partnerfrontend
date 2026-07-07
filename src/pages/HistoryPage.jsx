@@ -80,8 +80,13 @@ const HistoryPage = () => {
     return formatDate(dateString);
   };
 
+  const getRepairOrderName = (item) =>
+    item.odoo_repair_order_name || item.repair_reference || item.sales_order;
+
   const filteredHistory = history.filter(item => {
-    const matchesSearch = item.sales_order.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const repairOrderName = getRepairOrderName(item);
+    const matchesSearch = repairOrderName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.sales_order?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.sr_poc?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -118,7 +123,7 @@ const HistoryPage = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Search by sales order or POC..."
+                placeholder="Search by repair order, sales order or POC..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -196,7 +201,9 @@ const HistoryPage = () => {
 
           {/* History List */}
           <div className="space-y-4">
-            {filteredHistory.map((item) => (
+            {filteredHistory.map((item) => {
+              const repairOrderName = getRepairOrderName(item);
+              return (
               <Card key={item.id} className="border-border/80 shadow-sm overflow-hidden transition-all hover:shadow-md">
                 {/* Header */}
                 <div
@@ -229,9 +236,14 @@ const HistoryPage = () => {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-3">
-                          <h3 className="text-lg font-semibold text-foreground truncate">
-                            {item.sales_order}
-                          </h3>
+                          <div className="min-w-0">
+                            <h3 className="text-lg font-semibold text-foreground truncate">
+                              {repairOrderName}
+                            </h3>
+                            {repairOrderName !== item.sales_order && (
+                              <p className="text-xs font-medium text-muted-foreground">SO: {item.sales_order}</p>
+                            )}
+                          </div>
                           {item.status === 'completed' ? (
                             <Badge variant="default" className="bg-success hover:bg-success/90 text-white gap-1 px-2.5 py-0.5">
                               <CheckCircle className="w-3 h-3" />
@@ -283,8 +295,8 @@ const HistoryPage = () => {
                         <p className="font-medium text-foreground">{item.so_poc || 'N/A'}</p>
                       </div>
                       <div className="rounded-md border border-border bg-background px-3 py-2">
-                        <p className="text-muted-foreground text-xs uppercase tracking-wide">Repair Reference</p>
-                        <p className="font-medium text-foreground">{item.repair_reference || 'N/A'}</p>
+                        <p className="text-muted-foreground text-xs uppercase tracking-wide">Repair Order</p>
+                        <p className="font-medium text-foreground">{repairOrderName || 'N/A'}</p>
                       </div>
                       <div className="rounded-md border border-border bg-background px-3 py-2">
                         <p className="text-muted-foreground text-xs uppercase tracking-wide">Expected Delivery</p>
@@ -352,7 +364,8 @@ const HistoryPage = () => {
                   </div>
                 )}
               </Card>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
