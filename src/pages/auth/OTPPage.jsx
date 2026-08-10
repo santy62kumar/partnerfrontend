@@ -107,7 +107,7 @@ const OTPPage = () => {
             title="OTP Verification"
             subtitle="Enter the 6-digit code sent to your phone"
           />
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={(event) => void handleSubmit(onSubmit)(event)}>
             <div className="mb-6">
               <div className="flex gap-2 justify-center" role="group" aria-label="One-time password input">
                 {digits.map((digit, index) => (

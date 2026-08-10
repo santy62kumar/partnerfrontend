@@ -23,6 +23,7 @@ const normalizeChecklistPayload = (payload) => {
   const items = rawItems
     .map((item) => {
       const status = item.status || {};
+      const reviewStatus = status.review_status || (status.is_approved ? 'approved' : (status.admin_comment ? 'rejected' : 'pending'));
       return {
         id: item.id,
         checklist_item_id: item.id,
@@ -30,6 +31,7 @@ const normalizeChecklistPayload = (payload) => {
         position: item.position ?? 0,
         checked: status.checked ?? false,
         is_approved: status.is_approved ?? false,
+        review_status: reviewStatus,
         comment: status.comment ?? '',
         admin_comment: status.admin_comment ?? '',
         document_link: status.document_link ?? null,
@@ -46,6 +48,8 @@ const normalizeChecklistPayload = (payload) => {
       id: checklist.id,
       name: checklist.name,
       description: checklist.description,
+      document_link: checklist.document_link ?? null,
+      template_available: checklist.template_available ?? false,
     },
     items,
     job_id: payload?.job_id,
@@ -142,6 +146,46 @@ export const checklistApi = {
       const errorMessage = error?.response?.data?.detail || error?.response?.data?.message || error.message || 'Upload failed';
       throw new Error(errorMessage);
     }
+  },
+
+  uploadChecklistDocument: async (jobId, checklistId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post(
+      `/dashboard/jobs/${jobId}/checklists/${checklistId}/document`,
+      formData
+    );
+    return response.data;
+  },
+
+  downloadChecklistTemplate: async (jobId, checklistId) => {
+    const response = await apiClient.get(
+      `/dashboard/jobs/${jobId}/checklists/${checklistId}/template`,
+      { responseType: 'blob' }
+    );
+    const url = globalThis.URL.createObjectURL(response.data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'All Check-list.xlsx';
+    link.click();
+    setTimeout(() => globalThis.URL.revokeObjectURL(url), 10000);
+  },
+
+  // The filled-in checklist as a PDF: items, statuses, notes and evidence photos.
+  // Available for every checklist, unlike the ISM-only blank workbook above.
+  exportChecklist: async (jobId, checklistId) => {
+    const response = await apiClient.get(
+      `/dashboard/jobs/${jobId}/checklists/${checklistId}/export`,
+      { responseType: 'blob' }
+    );
+    const disposition = String(response.headers?.['content-disposition'] || '');
+    const filename = disposition.match(/filename="?([^";]+)/i)?.[1] || 'checklist.pdf';
+    const url = globalThis.URL.createObjectURL(response.data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    setTimeout(() => globalThis.URL.revokeObjectURL(url), 10000);
   },
 
   getJobChecklists: async (jobId) => {

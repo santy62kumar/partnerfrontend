@@ -27,16 +27,10 @@ const StatsCards = ({ stats, totalJobs = 0, completionRate = 0, isInternal = fal
     },
   ];
 
-  // Only show Earnings and Incentives for external users (members have is_internal=true)
-  const financialCards = !isInternal
+  // External partners are paid a rate, so they see Earnings and never Incentives.
+  // Internal members are salaried, so they see Incentives and never Earnings.
+  const financialCards = isInternal
     ? [
-        {
-          title: 'Earnings',
-          value: formatters.currency(stats.totalEarnings),
-          subtitle: `${formatters.currency(averageEarning)} avg`,
-          icon: IndianRupee,
-          iconColor: 'text-foreground',
-        },
         {
           title: 'Incentives',
           value: formatters.currency(stats.totalIncentives),
@@ -45,14 +39,24 @@ const StatsCards = ({ stats, totalJobs = 0, completionRate = 0, isInternal = fal
           iconColor: 'text-primary',
         },
       ]
-    : [];
+    : [
+        {
+          title: 'Earnings',
+          value: formatters.currency(stats.totalEarnings),
+          subtitle: `${formatters.currency(averageEarning)} avg`,
+          icon: IndianRupee,
+          iconColor: 'text-foreground',
+        },
+      ];
 
   const cards = [...baseCards, ...financialCards];
 
+  // Three cards: two base + one financial. Phones stay 2-up (the header shortens
+  // titles at that width) and the odd card fills its row instead of leaving a gap.
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
       {cards.map((card) => (
-        <Card key={card.title} className="hover:shadow-md transition-shadow border-border/80 bg-gradient-to-br from-card to-card/90 overflow-hidden">
+        <Card key={card.title} className="max-sm:last:col-span-2 hover:shadow-md transition-shadow border-border/80 bg-gradient-to-br from-card to-card/90 overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
             <CardTitle className="text-xs sm:text-sm font-semibold text-muted-foreground whitespace-nowrap hidden sm:block">
               {card.title}

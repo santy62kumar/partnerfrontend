@@ -3,8 +3,13 @@ import { authApi } from '@api/authApi';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import useChecklistStore from '@store/checklistStore';
+import { useDashboardStore } from '@store/dashboardStore';
+import useRequisiteStore from '@store/requisiteStore';
 
 export const useAuth = () => {
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const {
     user,
@@ -90,10 +95,18 @@ export const useAuth = () => {
   const logout = async () => {
     try {
       await authApi.logout();
+      queryClient.clear();
+      useChecklistStore.getState().resetStore();
+      useDashboardStore.getState().resetDashboard();
+      useRequisiteStore.getState().clearBucket();
       clearAuth();
       toast.success('Logged out successfully');
       navigate('/login');
     } catch {
+      queryClient.clear();
+      useChecklistStore.getState().resetStore();
+      useDashboardStore.getState().resetDashboard();
+      useRequisiteStore.getState().clearBucket();
       clearAuth();
       navigate('/login');
     }

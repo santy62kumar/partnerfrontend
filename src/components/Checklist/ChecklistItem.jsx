@@ -87,9 +87,9 @@ const ChecklistItem = ({ item }) => {
 
 
   const getStatusKey = (item) => {
-    if (item.is_approved) return 'is_approved';
+    if (item.review_status === 'approved') return 'is_approved';
+    if (item.review_status === 'rejected') return 'rejected';
     if (item.checked) return 'checked';
-    if (item.admin_comment) return 'rejected';
     return 'pending';
   };
 
@@ -217,7 +217,7 @@ const ChecklistItem = ({ item }) => {
                 Admin Feedback
               </p>
               <p className="mt-1 text-sm text-red-700">{item.admin_comment}</p>
-              {!item.checked && !item.is_approved && (
+              {item.review_status === 'rejected' && (
                 <p className="mt-2 text-xs text-red-600">
                   Fix the note or photo, then check this item again to send it back for review.
                 </p>

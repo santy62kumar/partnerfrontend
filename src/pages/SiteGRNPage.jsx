@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Package, CheckCircle2, AlertTriangle, Loader2, ClipboardCheck, ArrowLeft, ChevronRight, Clock } from 'lucide-react';
 import { grnApi } from '../api/grnApi';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
@@ -182,23 +182,35 @@ const SiteGRNPage = () => {
   const [selectedId, setSelectedId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [canRetry, setCanRetry] = useState(false);
 
-  useEffect(() => {
+  const loadGrns = useCallback(() => {
+    setLoading(true);
+    setError('');
+    setCanRetry(false);
     grnApi.getAssigned()
       .then(data => {
-        const list = Array.isArray(data) ? data : [data];
+        const list = Array.isArray(data) ? data : (data ? [data] : []);
         setGrns(list);
+        setError(list.length ? '' : 'No pending GRN assigned to you.');
         if (list.length === 1) setSelectedId(list[0].id);
       })
       .catch(err => {
-        if (err?.response?.status === 404) {
+        const status = err?.status ?? err?.response?.status;
+        if (status === 404) {
           setError('No pending GRN assigned to you.');
         } else {
           setError('Failed to load GRN. Please try again.');
+          setCanRetry(true);
         }
       })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(loadGrns, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadGrns]);
 
   if (loading) {
     return (
@@ -214,6 +226,7 @@ const SiteGRNPage = () => {
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-muted-foreground">
         <Package className="h-12 w-12 opacity-30" />
         <p className="text-center max-w-sm">{error}</p>
+        {canRetry && <Button variant="outline" onClick={loadGrns}>Try again</Button>}
       </div>
     );
   }

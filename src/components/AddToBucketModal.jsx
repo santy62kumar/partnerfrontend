@@ -37,7 +37,7 @@ const AddToBucketModal = ({ item, onSave, onClose }) => {
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add to Bucket</DialogTitle>
+          <DialogTitle>Add to Requisite</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
@@ -116,7 +116,7 @@ const AddToBucketModal = ({ item, onSave, onClose }) => {
               className="w-full sm:w-auto"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Add to Bucket
+              Add to Requisite
             </Button>
           </DialogFooter>
         </form>

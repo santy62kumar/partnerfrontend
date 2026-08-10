@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, CheckCircle2, X, FileText, Camera, Package } from 'lucide-react';
+import { Home, CheckCircle2, X, FileText, Camera, ClipboardList, Package } from 'lucide-react';
 import { useUIStore } from '@store/uiStore';
 import { Button } from '@components/ui/button';
 
@@ -27,6 +27,11 @@ const Sidebar = () => {
       name: 'Attendance',
       path: '/attendance',
       icon: Camera,
+    },
+    {
+      name: 'Daily Report',
+      path: '/daily-report',
+      icon: ClipboardList,
     },
     {
       name: 'Site GRN',

@@ -15,6 +15,7 @@ import {
   Filter,
   AlertCircle,
   Download,
+  RefreshCw,
 } from 'lucide-react';
 import { useBOMHistory} from '@hooks/useQueryHooks';
 import { bomAPI } from '@/api/bomApi';
@@ -23,26 +24,43 @@ import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { Badge } from '@components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@components/ui/table';
+import { useToast } from '@hooks/useToast';
 
 const HistoryPage = () => {
   const navigate = useNavigate();
+  const toast = useToast();
   const [expandedItems, setExpandedItems] = useState(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [downloadingId, setDownloadingId] = useState(null);
+  const [updatingId, setUpdatingId] = useState(null);
+  const [historyLimit, setHistoryLimit] = useState(100);
 
   const handleDownload = async (id, salesOrder) => {
     setDownloadingId(id);
     try {
       await bomAPI.downloadRepairOrder(id, salesOrder);
-    } catch {
-      // silently ignore — browser already shows network errors
+    } catch (error) {
+      toast.error(error.message || 'Failed to download repair order');
     } finally {
       setDownloadingId(null);
     }
   };
 
-  const { data: history = [], isLoading: loading, error, refetch } = useBOMHistory(100, 0);
+  const { data: history = [], isLoading: loading, isFetching, error, refetch } = useBOMHistory(historyLimit, 0);
+
+  const runAction = async (id, action, successMessage) => {
+    setUpdatingId(id);
+    try {
+      await action();
+      await refetch();
+      toast.success(successMessage);
+    } catch (actionError) {
+      toast.error(actionError.message || 'Could not update requisite');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   const toggleExpand = (id) => {
     const newExpanded = new Set(expandedItems);
@@ -316,6 +334,39 @@ const HistoryPage = () => {
                       </div>
                     </div>
 
+                    <div className="mb-5 flex flex-wrap items-center gap-2 rounded-md border border-border bg-background p-3">
+                      <div className="mr-auto min-w-0">
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">Odoo sync</p>
+                        <p className={`text-sm font-semibold ${item.odoo_sync_status === 'failed' ? 'text-destructive' : 'text-foreground'}`}>
+                          {item.odoo_sync_status}
+                        </p>
+                        {item.odoo_sync_error && <p className="mt-1 text-xs text-destructive">{item.odoo_sync_error}</p>}
+                      </div>
+                      {item.odoo_sync_status === 'failed' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={updatingId === item.id}
+                          onClick={() => runAction(item.id, () => bomAPI.retrySync(item.id), 'Odoo sync retried')}
+                        >
+                          <RefreshCw className={`h-4 w-4 ${updatingId === item.id ? 'animate-spin' : ''}`} />
+                          Retry sync
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={updatingId === item.id}
+                        onClick={() => runAction(
+                          item.id,
+                          () => bomAPI.updateStatus(item.id, item.status === 'completed' ? 'pending' : 'completed'),
+                          item.status === 'completed' ? 'Requisite reopened' : 'Requisite completed',
+                        )}
+                      >
+                        {item.status === 'completed' ? 'Reopen' : 'Mark completed'}
+                      </Button>
+                    </div>
+
                     <h4 className="font-semibold text-foreground mb-4 text-sm tracking-tight flex items-center gap-2">
                       <FileText className="w-4 h-4 text-muted-foreground" />
                       Requisite Items
@@ -367,6 +418,13 @@ const HistoryPage = () => {
               );
             })}
           </div>
+          {history.length === historyLimit && (
+            <div className="mt-6 flex justify-center">
+              <Button variant="outline" disabled={isFetching} onClick={() => setHistoryLimit((current) => current + 100)}>
+                {isFetching ? 'Loading…' : 'Load 100 more'}
+              </Button>
+            </div>
+          )}
         </>
       )}
     </div>

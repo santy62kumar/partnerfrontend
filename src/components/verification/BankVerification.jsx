@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@comp
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { Label } from '@components/ui/label';
+import KYCConsentModal from './KYCConsentModal';
 
 const BankVerification = ({ onSuccess, isBankVerified, canProceed }) => {
   const toast = useToast();
@@ -17,6 +18,9 @@ const BankVerification = ({ onSuccess, isBankVerified, canProceed }) => {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  // Account details are only sent once the disclosure has been read and accepted.
+  const [consentGiven, setConsentGiven] = useState(false);
+  const [showConsent, setShowConsent] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -97,6 +101,15 @@ const BankVerification = ({ onSuccess, isBankVerified, canProceed }) => {
 
   return (
     <Card className="border-border/80 shadow-sm hover:shadow-md transition-all">
+      <KYCConsentModal
+        open={showConsent}
+        type="bank"
+        onAccept={() => {
+          setConsentGiven(true);
+          setShowConsent(false);
+        }}
+        onDecline={() => setShowConsent(false)}
+      />
       <CardHeader>
         <CardTitle className="text-xl">Bank Details Verification</CardTitle>
         <CardDescription>
@@ -146,15 +159,27 @@ const BankVerification = ({ onSuccess, isBankVerified, canProceed }) => {
             </p>
           </div>
 
-          <Button
-            type="submit"
-            className="w-full"
-            variant="default"
-            size="lg"
-            disabled={loading}
-          >
-            {loading ? "Verifying..." : "Verify Bank Details"}
-          </Button>
+          {consentGiven ? (
+            <Button
+              type="submit"
+              className="w-full"
+              variant="default"
+              size="lg"
+              disabled={loading}
+            >
+              {loading ? "Verifying..." : "Verify Bank Details"}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              className="w-full"
+              variant="default"
+              size="lg"
+              onClick={() => setShowConsent(true)}
+            >
+              Continue
+            </Button>
+          )}
         </form>
       </CardContent>
     </Card>

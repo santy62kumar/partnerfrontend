@@ -4,21 +4,22 @@ import Button from '@components/common/Button';
 import Loader from '@components/common/Loader';
 import Card from '@components/common/Card';
 import JobDetails from '@components/dashboard/JobDetails';
-import { useJobDetail, useJobProgress } from '@hooks/useQueryHooks';
+import { useAddJobNote, useJobDetail, useJobHistory } from '@hooks/useQueryHooks';
 import { useToast } from '@hooks/useToast';
 import { formatters } from '@utils/formatters';
 import { JOB_STATUS_COLORS, JOB_STATUS_LABELS } from '@utils/constants';
-import { IoArrowBackOutline } from 'react-icons/io5';
+import { IoArrowBackOutline, IoTimeOutline } from 'react-icons/io5';
 import BillingSection from '@components/dashboard/BillingSection';
-import DailyJobUpdate from '@components/dashboard/DailyJobUpdate';
 import { useAuthStore } from '@store/authStore';
 
 const JobDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const { data: job, isLoading: jobLoading, error: jobError } = useJobDetail(id);
-  const { data: progress = [] } = useJobProgress(id);
+  const { data: job, isLoading: jobLoading, error: jobError, refetch: refetchJob } = useJobDetail(id);
+  const { data: history = [], isLoading: historyLoading, error: historyError, refetch: refetchHistory } = useJobHistory(id);
+  const { mutateAsync: addNote, isPending: noteSaving } = useAddJobNote(id);
+  const [note, setNote] = React.useState('');
   const user = useAuthStore((s) => s.user);
   const isExternalIP = user?.is_internal === false;
 
@@ -39,6 +40,16 @@ const JobDetailPage = () => {
     );
   }
 
+  if (jobError && jobError.status !== 404) {
+    return (
+      <div className="py-12 text-center">
+        <h2 className="mb-2 text-2xl font-bold text-foreground">Could not load job</h2>
+        <p className="mb-4 text-sm text-muted-foreground">Check your connection and try again.</p>
+        <Button variant="primary" onClick={() => refetchJob()}>Retry</Button>
+      </div>
+    );
+  }
+
   if (!job) {
     return (
       <div className="text-center py-12">
@@ -53,10 +64,16 @@ const JobDetailPage = () => {
   }
 
   const checklists = Array.isArray(job.checklists) ? job.checklists : [];
-  const progressUpdates = Array.isArray(progress) ? progress.filter(Boolean) : [];
-  const latestFirstProgress = [...progressUpdates].sort(
-    (a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at)
-  );
+  const handleAddNote = async () => {
+    if (!note.trim()) return;
+    try {
+      await addNote(note);
+      setNote('');
+      toast.success('Job note added');
+    } catch (error) {
+      toast.error(error.message || 'Failed to add job note');
+    }
+  };
 
   return (
     <div className="animate-fadeIn space-y-6">
@@ -85,11 +102,6 @@ const JobDetailPage = () => {
               </span>
             </div>
 
-            <p className="text-sm text-muted-foreground">
-              Last update: {latestFirstProgress[0]?.uploaded_at
-                ? formatters.dateTime(latestFirstProgress[0].uploaded_at)
-                : 'No uploads yet'}
-            </p>
           </div>
         </div>
       </section>
@@ -134,7 +146,47 @@ const JobDetailPage = () => {
 
         <div className="space-y-6">
           {isExternalIP && <BillingSection job={job} />}
-          <DailyJobUpdate jobId={job.id} />
+          <Card title="Job activity">
+            <div className="space-y-4">
+              <label className="block space-y-2">
+                <span className="text-sm font-medium text-foreground">Add progress note</span>
+                <textarea
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  placeholder="Record a site update or blocker"
+                  rows={3}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                />
+              </label>
+              <Button type="button" onClick={handleAddNote} disabled={noteSaving || !note.trim()}>
+                {noteSaving ? 'Saving…' : 'Add note'}
+              </Button>
+
+              {historyLoading ? (
+                <p className="text-sm text-muted-foreground">Loading activity…</p>
+              ) : historyError ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-destructive">Could not load job activity.</p>
+                  <Button type="button" variant="secondary" onClick={() => refetchHistory()}>Retry</Button>
+                </div>
+              ) : history.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No job activity recorded yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {history.map((entry) => (
+                    <div key={entry.id} className="flex gap-3 border-b border-border pb-3 last:border-0 last:pb-0">
+                      <IoTimeOutline className="mt-0.5 shrink-0 text-primary" size={18} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold capitalize text-foreground">{entry.status?.replaceAll('_', ' ')}</p>
+                        <p className="text-xs text-muted-foreground">{formatters.dateTime(entry.timestamp)}</p>
+                        {entry.notes && <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{entry.notes}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Card>
         </div>
       </div>
     </div>

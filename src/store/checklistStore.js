@@ -278,6 +278,22 @@ saveChanges: async () => {
           throw error;
         }
       },
+
+      uploadChecklistDocument: async (file) => {
+        const { jobId, checklist } = get();
+        set({ isSaving: true, error: null });
+        try {
+          const response = await checklistApi.uploadChecklistDocument(jobId, checklist.id, file);
+          set({
+            checklist: { ...checklist, document_link: response.document_link },
+            isSaving: false,
+          });
+          return response;
+        } catch (error) {
+          set({ error: error?.message || 'Failed to upload checklist document', isSaving: false });
+          throw error;
+        }
+      },
       
       /**
        * Check if there are unsaved changes

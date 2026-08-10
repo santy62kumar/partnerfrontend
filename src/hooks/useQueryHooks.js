@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dashboardApi } from '@api/dashboardApi';
 import { bomAPI } from '@api/bomApi';
-import { dailyUpdateApi } from '@api/dailyUpdateApi';
 
 // ─── Dashboard / Jobs ────────────────────────────────────────────
 
@@ -28,29 +27,18 @@ export const useJobDetail = (jobId) => {
     });
 };
 
-export const useJobProgress = (jobId) => {
-    return useQuery({
-        queryKey: ['partner-job-progress', jobId],
-        queryFn: async () => {
-            const response = await dashboardApi.getJobProgress(jobId);
-            return response.uploads || [];
-        },
-        enabled: !!jobId,
-        staleTime: 2 * 60 * 1000,
-    });
-};
+export const useJobHistory = (jobId) => useQuery({
+    queryKey: ['partner-job-history', jobId],
+    queryFn: () => dashboardApi.getJobHistory(jobId),
+    enabled: !!jobId,
+    staleTime: 60 * 1000,
+});
 
-export const useUploadProgress = () => {
+export const useAddJobNote = (jobId) => {
     const queryClient = useQueryClient();
-
     return useMutation({
-        mutationFn: ({ jobId, file, comment }) =>
-            dashboardApi.uploadProgress(jobId, file, comment),
-        onSuccess: (_, variables) => {
-            // Invalidate both progress and job detail so they refresh
-            queryClient.invalidateQueries({ queryKey: ['partner-job-progress', variables.jobId] });
-            queryClient.invalidateQueries({ queryKey: ['partner-job', variables.jobId] });
-        },
+        mutationFn: (notes) => dashboardApi.addJobNote(jobId, notes),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['partner-job-history', jobId] }),
     });
 };
 
@@ -59,7 +47,7 @@ export const useAttendance = () => {
         queryKey: ['partner-attendance'],
         queryFn: async () => {
             const response = await dashboardApi.getAttendance();
-            return response.records || [];
+            return response || { records: [], missing_reports: [] };
         },
         staleTime: 60 * 1000,
     });
@@ -97,27 +85,11 @@ export const useRequestInvoice = (jobId) => {
     });
 };
 
-// ─── Daily Job Updates ───────────────────────────────────────────
-
-export const useDailyUpdates = (jobId) => {
-    return useQuery({
-        queryKey: ['partner-daily-updates', jobId],
-        queryFn: async () => {
-            const response = await dailyUpdateApi.getUpdates(jobId);
-            return response.updates || [];
-        },
-        enabled: !!jobId,
-        staleTime: 60 * 1000,
-    });
-};
-
-export const useSubmitDailyUpdate = (jobId) => {
+export const useRequestAdditionalInvoice = (jobId) => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (data) => dailyUpdateApi.submit({ jobId, ...data }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['partner-daily-updates', jobId] });
-        },
+        mutationFn: (data) => dashboardApi.requestAdditionalInvoice(jobId, data),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['partner-billing', jobId] }),
     });
 };
 

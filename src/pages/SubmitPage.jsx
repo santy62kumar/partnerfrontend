@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft,
   Send,
   CheckCircle,
   AlertCircle,
@@ -81,12 +80,18 @@ const SubmitPage = () => {
     e.preventDefault();
 
     if (bucket.length === 0) {
-      setError('Bucket is empty. Please add items before submitting.');
+      setError('Add at least one item before submitting.');
       return;
     }
 
     if (!salesOrder || !cabinetPosition) {
       setError('Sales order and cabinet position are required.');
+      return;
+    }
+
+    const itemWithoutStatus = bucket.find((item) => !item.component_status?.trim());
+    if (itemWithoutStatus) {
+      setError(`Select a component status for ${itemWithoutStatus.product_name}.`);
       return;
     }
 
@@ -166,19 +171,9 @@ const SubmitPage = () => {
 
   return (
     <div className="animate-fadeIn max-w-4xl mx-auto pb-10">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8 border-b border-border pb-6">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate('/site-requisite/bucket')}
-          className="h-10 w-10 shrink-0"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <h1 className="text-3xl font-bold font-heading text-foreground flex items-center gap-3">
-          Submit Site Requisite
-        </h1>
+      <div className="mb-8 border-b border-border pb-6">
+        <h2 className="text-2xl font-bold font-heading text-foreground">Submit Site Requisite</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Confirm the request details and create the repair order.</p>
       </div>
 
       {/* Error Alert */}
@@ -340,21 +335,12 @@ const SubmitPage = () => {
                 </div>
 
                 {/* Submit Buttons */}
-                <div className="flex gap-4 pt-4 border-t border-border/50">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => navigate('/site-requisite/bucket')}
-                    size="lg"
-                    className="flex-1"
-                  >
-                    Back to Bucket
-                  </Button>
+                <div className="pt-4 border-t border-border/50">
                   <Button
                     type="submit"
                     disabled={loading || detailsLoading || bucket.length === 0 || !soDetails}
                     size="lg"
-                    className="flex-1"
+                    className="w-full"
                   >
                     {loading ? (
                       <>

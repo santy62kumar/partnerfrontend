@@ -3,11 +3,8 @@ import React from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import Footer from './Footer';
-import { useUIStore } from '@store/uiStore';
 
 const Layout = ({ children }) => {
-  const sidebarOpen = useUIStore((state) => state.sidebarOpen);
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <a

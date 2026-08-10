@@ -1,16 +1,20 @@
 import React from 'react';
 import Card from '@components/common/Card';
 import Button from '@components/common/Button';
-import { useBilling, useRequestInvoice } from '@hooks/useQueryHooks';
+import { useBilling, useRequestAdditionalInvoice, useRequestInvoice } from '@hooks/useQueryHooks';
 import { useToast } from '@hooks/useToast';
 import { IoReceiptOutline, IoCheckmarkCircleOutline, IoTimeOutline, IoCloseCircleOutline, IoPrintOutline } from 'react-icons/io5';
 import { dashboardApi } from '@api/dashboardApi';
 
 const BillingSection = ({ job }) => {
   const toast = useToast();
-  const { data: billing, isLoading } = useBilling(job?.id);
+  const { data: billing, isLoading, error, refetch } = useBilling(job?.id);
   const { mutateAsync: requestInvoice, isPending } = useRequestInvoice(job?.id);
-  const [downloading, setDownloading] = React.useState(false);
+  const { mutateAsync: requestAdditional, isPending: isAdditionalPending } = useRequestAdditionalInvoice(job?.id);
+  const [downloadingId, setDownloadingId] = React.useState(null);
+  const [showAdditionalForm, setShowAdditionalForm] = React.useState(false);
+  const [completionPercentage, setCompletionPercentage] = React.useState('');
+  const [invoiceNotes, setInvoiceNotes] = React.useState('');
 
   const invoiceRequest = billing?.invoice_request;
   const status = invoiceRequest?.status;
@@ -24,16 +28,36 @@ const BillingSection = ({ job }) => {
     }
   };
 
-  const handleDownloadInvoice = async () => {
+  const handleDownloadInvoice = async (invoiceRequestId) => {
     if (!job?.id) return;
-    setDownloading(true);
+    setDownloadingId(invoiceRequestId);
     try {
-      await dashboardApi.downloadInvoice(job.id, job.name);
+      await dashboardApi.downloadInvoice(job.id, job.name, invoiceRequestId);
       toast.success('Bill downloaded');
     } catch (err) {
       toast.error(err?.response?.data?.detail || err?.message || 'Failed to download bill');
     } finally {
-      setDownloading(false);
+      setDownloadingId(null);
+    }
+  };
+
+  const handleAdditionalRequest = async () => {
+    const percentage = completionPercentage === '' ? undefined : Number(completionPercentage);
+    if (percentage !== undefined && (!Number.isInteger(percentage) || percentage < 0 || percentage > 100)) {
+      toast.error('Completion percentage must be a whole number from 0 to 100');
+      return;
+    }
+    try {
+      await requestAdditional({
+        completion_percentage: percentage,
+        notes: invoiceNotes.trim() || undefined,
+      });
+      setCompletionPercentage('');
+      setInvoiceNotes('');
+      setShowAdditionalForm(false);
+      toast.success('Additional invoice request submitted');
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || err?.message || 'Failed to submit invoice request');
     }
   };
 
@@ -41,6 +65,15 @@ const BillingSection = ({ job }) => {
     return (
       <Card title="Billing">
         <p className="text-sm text-muted-foreground">Loading billing information…</p>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card title="Billing">
+        <p className="mb-3 text-sm text-destructive">Could not load billing information.</p>
+        <Button variant="secondary" size="sm" onClick={() => refetch()}>Retry</Button>
       </Card>
     );
   }
@@ -89,14 +122,6 @@ const BillingSection = ({ job }) => {
               )}
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRequest}
-            disabled={isPending}
-          >
-            {isPending ? 'Submitting…' : 'Re-request Invoice'}
-          </Button>
         </div>
       )}
 
@@ -110,12 +135,82 @@ const BillingSection = ({ job }) => {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleDownloadInvoice}
-              disabled={downloading}
+              onClick={() => handleDownloadInvoice(invoiceRequest.id)}
+              disabled={downloadingId === invoiceRequest.id}
             >
               <IoPrintOutline size={16} />
-              {downloading ? 'Downloading...' : 'Download Bill XLSX'}
+              {downloadingId === invoiceRequest.id ? 'Downloading...' : 'Download Bill XLSX'}
             </Button>
+          </div>
+        </div>
+      )}
+
+      {invoiceRequest && (invoiceRequest.completion_percentage != null || invoiceRequest.notes) && (
+        <div className="mt-3 rounded-lg border border-border bg-background p-3 text-sm">
+          {invoiceRequest.completion_percentage != null && <p><span className="text-muted-foreground">Completion:</span> {invoiceRequest.completion_percentage}%</p>}
+          {invoiceRequest.notes && <p className="mt-1 whitespace-pre-wrap"><span className="text-muted-foreground">Notes:</span> {invoiceRequest.notes}</p>}
+        </div>
+      )}
+
+      {invoiceRequest && status !== 'pending' && (
+        <div className="mt-4 border-t border-border pt-4">
+          {!showAdditionalForm ? (
+            <Button variant="outline" size="sm" onClick={() => setShowAdditionalForm(true)}>
+              {status === 'rejected' ? 'Request again' : 'Request another invoice'}
+            </Button>
+          ) : (
+            <div className="space-y-3">
+              <label className="block space-y-1">
+                <span className="text-xs font-medium text-muted-foreground">Completion percentage (optional)</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={completionPercentage}
+                  onChange={(event) => setCompletionPercentage(event.target.value)}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-xs font-medium text-muted-foreground">Notes (optional)</span>
+                <textarea
+                  rows={3}
+                  maxLength={1000}
+                  value={invoiceNotes}
+                  onChange={(event) => setInvoiceNotes(event.target.value)}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                />
+              </label>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleAdditionalRequest} disabled={isAdditionalPending}>
+                  {isAdditionalPending ? 'Submitting…' : 'Submit request'}
+                </Button>
+                <Button size="sm" variant="secondary" onClick={() => setShowAdditionalForm(false)} disabled={isAdditionalPending}>Cancel</Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {(billing?.invoice_requests || []).some(invoice => invoice.status === 'approved' && invoice.id !== invoiceRequest?.id) && (
+        <div className="mt-4 space-y-2 border-t pt-4">
+          <p className="text-sm font-medium">Previous approved invoices</p>
+          <div className="flex flex-wrap gap-2">
+            {(billing?.invoice_requests || [])
+              .filter(invoice => invoice.status === 'approved' && invoice.id !== invoiceRequest?.id)
+              .map(invoice => (
+                <Button
+                  key={invoice.id}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownloadInvoice(invoice.id)}
+                  disabled={downloadingId === invoice.id}
+                >
+                  <IoPrintOutline size={16} />
+                  {downloadingId === invoice.id ? 'Downloading...' : (invoice.invoice_number || `Invoice ${invoice.id}`)}
+                </Button>
+              ))}
           </div>
         </div>
       )}

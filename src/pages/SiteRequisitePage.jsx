@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, ShoppingCart, Building2, FolderOpen, MapPin, UserCircle2, BadgeCheck, AlertCircle, Clock } from 'lucide-react';
 import BOMTreeNode from '../components/BOMTreeNode';
-import AddToBucketModal from '../components/AddToBucketModal';
 import useRequisiteStore from '../store/requisiteStore';
 import { bomAPI } from '../api/bomApi';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
@@ -17,10 +16,9 @@ const SiteRequisitePage = () => {
   const [allCabinets, setAllCabinets] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedItem, setSelectedItem] = useState(null);
   const [detailsError, setDetailsError] = useState('');
 
-  const { bomData, setBOMData, addToBucket, bucket, soDetails } = useRequisiteStore();
+  const { bomData, setBOMData, addToBucket, removeFromBucket, bucket, soDetails } = useRequisiteStore();
 
   const formatOrderState = (value) => {
     const normalized = String(value ?? '').trim().toLowerCase();
@@ -76,13 +74,17 @@ const SiteRequisitePage = () => {
     }
   };
 
-  const handleAddToBucket = (item) => {
-    setSelectedItem(item);
-  };
+  const selectedProducts = React.useMemo(
+    () => new Set(bucket.map((item) => item.product_name)),
+    [bucket],
+  );
 
-  const handleSaveToBucket = (itemData) => {
-    addToBucket(itemData);
-    setSelectedItem(null);
+  const handleToggleItem = (item, selected) => {
+    if (selected) {
+      addToBucket({ product_name: item.product_name, quantity: 1 });
+    } else {
+      removeFromBucket(item.product_name);
+    }
   };
 
   return (
@@ -103,11 +105,13 @@ const SiteRequisitePage = () => {
             History
           </Button>
           <Button
-            onClick={() => navigate('/site-requisite/bucket')}
+            type="button"
+            onClick={() => navigate('/site-requisite/review')}
+            disabled={bucket.length === 0}
             className="relative h-11 px-6 shadow-sm"
           >
             <ShoppingCart className="w-5 h-5 mr-2" />
-            Bucket
+            Review &amp; Continue
             {bucket.length > 0 && (
               <span className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-background">
                 {bucket.length}
@@ -248,6 +252,7 @@ const SiteRequisitePage = () => {
         <Card className="border-border/80 shadow-sm mb-8 animate-slideUp">
           <CardHeader className="bg-muted/30 border-b border-border/50">
             <CardTitle className="text-lg">BOM Hierarchy</CardTitle>
+            <p className="text-xs text-muted-foreground">Select multiple components, then complete their status and description below.</p>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="space-y-2">
@@ -255,22 +260,25 @@ const SiteRequisitePage = () => {
                 <BOMTreeNode
                   key={`${item.product_name}-${index}`}
                   node={item}
-                  onAddToBucket={handleAddToBucket}
+                  selectedProducts={selectedProducts}
+                  onToggle={handleToggleItem}
                 />
               ))}
             </div>
           </CardContent>
+          {bucket.length > 0 && (
+            <div className="flex items-center justify-between gap-4 border-t border-border/50 bg-muted/20 px-5 py-4">
+              <p className="text-sm font-medium text-muted-foreground">
+                {bucket.length} component{bucket.length === 1 ? '' : 's'} selected
+              </p>
+              <Button type="button" onClick={() => navigate('/site-requisite/review')}>
+                Continue
+              </Button>
+            </div>
+          )}
         </Card>
       )}
 
-      {/* Add to Bucket Modal */}
-      {selectedItem && (
-        <AddToBucketModal
-          item={selectedItem}
-          onSave={handleSaveToBucket}
-          onClose={() => setSelectedItem(null)}
-        />
-      )}
     </div>
   );
 };

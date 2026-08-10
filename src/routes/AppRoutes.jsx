@@ -15,11 +15,11 @@ import ChecklistPage from '@components/Checklist/ChecklistPage';
 import apiClient from '../api/axiosConfig';
 import { useAuthStore } from '@store/authStore';
 import SiteRequisitePage from '../pages/SiteRequisitePage';
-import BucketPage from '../pages/BucketPage';
-import SubmitPage from '../pages/SubmitPage';
+import SiteRequisiteReviewPage from '../pages/SiteRequisiteReviewPage';
 import HistoryPage from '../pages/HistoryPage';
 import SiteGRNPage from '../pages/SiteGRNPage';
 import AttendancePage from '../pages/AttendancePage';
+import DailyReportPage from '../pages/DailyReportPage';
 
 
 function AppRoutes() {
@@ -84,12 +84,11 @@ function AppRoutes() {
             element={<ChecklistPage />}
           />
           <Route path="/site-requisite" element={<SiteRequisitePage />} />
-
-          <Route path="/site-requisite/bucket" element={<BucketPage />} />
-          <Route path="/site-requisite/bucket/submit" element={<SubmitPage />} />
+          <Route path="/site-requisite/review" element={<SiteRequisiteReviewPage />} />
           <Route path="/site-requisite-history" element={<HistoryPage />} />
           <Route path="/site-grn" element={<SiteGRNPage />} />
           <Route path="/attendance" element={<AttendancePage />} />
+          <Route path="/daily-report" element={<DailyReportPage />} />
         </Route>
 
         {/* Default Redirect */}

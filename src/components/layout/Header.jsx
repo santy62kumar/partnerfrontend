@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, LogOut } from 'lucide-react';
+import { Menu, LogOut, Trash2 } from 'lucide-react';
 import { useUIStore } from '@store/uiStore';
 import { useAuthStore } from '@store/authStore';
 import { useAuth } from '@hooks/useAuth';
@@ -15,12 +15,21 @@ import {
   DropdownMenuTrigger,
 } from '@components/ui/dropdown-menu';
 import Modal from '@components/common/Modal';
+import { verificationApi } from '@api/verificationApi';
+import { useVerificationStore } from '@store/verificationStore';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 const Header = () => {
   const { toggleSidebar } = useUIStore();
   const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
+  const resetVerification = useVerificationStore((state) => state.resetVerification);
+  const navigate = useNavigate();
   const { logout } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showDeleteVerificationModal, setShowDeleteVerificationModal] = useState(false);
+  const [deletingVerification, setDeletingVerification] = useState(false);
 
   const fullName = [user?.first_name, user?.last_name].filter(Boolean).join(' ').trim();
   const fallbackName = user?.name || user?.email || formatters.phone(user?.phone_number) || 'User';
@@ -39,6 +48,27 @@ const Header = () => {
   const handleLogout = () => {
     setShowLogoutModal(false);
     logout();
+  };
+
+  const handleDeleteVerification = async () => {
+    setDeletingVerification(true);
+    try {
+      await verificationApi.deleteVerificationData();
+      resetVerification();
+      setUser({
+        ...user,
+        is_pan_verified: false,
+        is_bank_details_verified: false,
+        is_id_verified: false,
+      });
+      setShowDeleteVerificationModal(false);
+      toast.success('Verification data deleted');
+      navigate('/verification', { replace: true });
+    } catch (error) {
+      toast.error(error.message || 'Failed to delete verification data');
+    } finally {
+      setDeletingVerification(false);
+    }
   };
 
   return (
@@ -92,6 +122,10 @@ const Header = () => {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowDeleteVerificationModal(true)} className="text-destructive focus:text-destructive cursor-pointer">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    <span>Delete verification data</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setShowLogoutModal(true)} className="text-destructive focus:text-destructive cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
@@ -127,6 +161,23 @@ const Header = () => {
               Logout
             </Button>
           </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showDeleteVerificationModal}
+        onClose={() => !deletingVerification && setShowDeleteVerificationModal(false)}
+        title="Delete verification data"
+        size="sm"
+      >
+        <p className="mb-6 text-sm text-muted-foreground">
+          This permanently removes your PAN, bank details and uploaded verification documents. You will need to verify again.
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={() => setShowDeleteVerificationModal(false)} disabled={deletingVerification}>Cancel</Button>
+          <Button variant="destructive" onClick={handleDeleteVerification} disabled={deletingVerification}>
+            {deletingVerification ? 'Deleting…' : 'Delete data'}
+          </Button>
         </div>
       </Modal>
     </>

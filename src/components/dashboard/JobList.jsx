@@ -6,9 +6,21 @@ import { JOB_STATUS, JOB_STATUS_LABELS } from '@utils/constants';
 import { Button } from '@components/ui/button';
 import { Card, CardContent } from '@components/ui/card';
 
-const JobList = () => {
+const JobList = ({ searchTerm = '' }) => {
   const { getFilteredJobs, activeFilter, jobs, setActiveFilter } = useDashboardStore();
-  const filteredJobs = getFilteredJobs();
+  const query = searchTerm.trim().toLowerCase();
+  const filteredJobs = getFilteredJobs().filter((job) => {
+    if (!query) return true;
+    return [
+      job.id,
+      job.name,
+      job.customer_name,
+      job.type,
+      job.city,
+      job.state,
+      job.pincode,
+    ].some((value) => String(value ?? '').toLowerCase().includes(query));
+  });
   const activeFilterLabel = JOB_STATUS_LABELS[activeFilter] || 'Selected';
 
   if (filteredJobs.length === 0) {
@@ -23,9 +35,11 @@ const JobList = () => {
             No Jobs Found
           </h3>
           <p className="text-sm text-muted-foreground mb-5 max-w-sm">
-            No jobs are currently marked as {activeFilterLabel.toLowerCase()}.
+            {query
+              ? 'No jobs match your search in this status.'
+              : `No jobs are currently marked as ${activeFilterLabel.toLowerCase()}.`}
           </p>
-          {activeFilter !== JOB_STATUS.IN_PROGRESS && (
+          {!query && activeFilter !== JOB_STATUS.IN_PROGRESS && (
             <Button
               variant="outline"
               size="sm"

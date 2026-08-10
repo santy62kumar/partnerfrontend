@@ -1,18 +1,15 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft,
   ChevronDown,
   ShoppingCart,
   Trash2,
   Edit2,
-  Send,
   X,
   Check
 } from 'lucide-react';
 import useRequisiteStore from '../store/requisiteStore';
 import { Badge } from '@components/ui/badge';
-import { Card, CardContent } from '@components/ui/card';
+import { Card } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@components/ui/table';
@@ -36,14 +33,11 @@ const DEPARTMENTS = [
 ];
 
 const BucketPage = () => {
-  const navigate = useNavigate();
   const { bucket, removeFromBucket, updateBucketItem, salesOrder, cabinetPosition } = useRequisiteStore();
   const [editingItem, setEditingItem] = useState(null);
   const [editForm, setEditForm] = useState({
     quantity: 1,
-    issue_description: '',
     responsible_department: '',
-    component_status: '',
   });
   const [itemToRemove, setItemToRemove] = useState(null);
 
@@ -51,17 +45,14 @@ const BucketPage = () => {
     setEditingItem(item.product_name);
     setEditForm({
       quantity: item.quantity || 1,
-      issue_description: item.issue_description || '',
       responsible_department: item.responsible_department || '',
-      component_status: item.component_status || '',
     });
   };
 
   const handleSaveEdit = (productName) => {
     updateBucketItem(productName, {
-      ...editForm,
+      quantity: editForm.quantity,
       responsible_department: editForm.responsible_department || null,
-      component_status: editForm.component_status.trim() || null,
     });
     setEditingItem(null);
   };
@@ -70,14 +61,8 @@ const BucketPage = () => {
     setEditingItem(null);
     setEditForm({
       quantity: 1,
-      issue_description: '',
       responsible_department: '',
-      component_status: '',
     });
-  };
-
-  const handleSubmit = () => {
-    navigate('/site-requisite/bucket/submit');
   };
 
   const handleRemoveConfirm = () => {
@@ -91,73 +76,33 @@ const BucketPage = () => {
     <>
       <div className="animate-fadeIn max-w-6xl mx-auto pb-10">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 border-b border-border pb-6">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/site-requisite')}
-              className="h-10 w-10 shrink-0"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold font-heading text-foreground flex items-center gap-3">
-                <ShoppingCart className="w-8 h-8 text-primary" />
-                Bucket List
-              </h1>
-              {salesOrder && cabinetPosition && (
-                <p className="text-sm text-muted-foreground mt-1 font-medium bg-secondary/50 inline-block px-3 py-1 rounded-full border border-border mt-2">
-                  SO: <span className="text-foreground">{salesOrder}</span> | Cabinet: <span className="text-foreground">{cabinetPosition}</span>
-                </p>
-              )}
-            </div>
-          </div>
-
-          <Button
-            onClick={handleSubmit}
-            disabled={bucket.length === 0}
-            size="lg"
-            className="w-full sm:w-auto shadow-sm"
-          >
-            <Send className="w-4 h-4 mr-2" />
-            Submit Requisite
-          </Button>
+        <div className="mb-8 border-b border-border pb-6">
+          <h2 className="text-2xl font-bold font-heading text-foreground flex items-center gap-3">
+            <ShoppingCart className="w-6 h-6 text-primary" />
+            Selected Items
+          </h2>
+          {salesOrder && cabinetPosition && (
+            <p className="text-sm text-muted-foreground font-medium bg-secondary/50 inline-block px-3 py-1 rounded-full border border-border mt-2">
+              SO: <span className="text-foreground">{salesOrder}</span> | Cabinet: <span className="text-foreground">{cabinetPosition}</span>
+            </p>
+          )}
         </div>
 
-        {/* Empty State */}
-        {bucket.length === 0 ? (
-          <Card className="border-dashed border-2 bg-transparent shadow-none">
-            <CardContent className="flex flex-col items-center justify-center p-16 text-center">
-              <div className="h-24 w-24 rounded-full bg-secondary flex items-center justify-center mb-6">
-                <ShoppingCart className="w-12 h-12 text-muted-foreground" />
-              </div>
-              <h3 className="text-2xl font-semibold text-foreground mb-2 font-heading">
-                Your bucket is empty
-              </h3>
-              <p className="text-muted-foreground mb-8 max-w-md">
-                Add items from the BOM hierarchy to create a site requisite and proceed to request parts.
-              </p>
-              <Button onClick={() => navigate('/site-requisite')} size="lg">
-                Browse BOM Items
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
+        {bucket.length > 0 && (
           <>
-            {/* Bucket Items */}
+            {/* Selected Items */}
             <Card className="border-border/80 shadow-sm overflow-hidden mb-6">
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader className="bg-secondary/40">
-                      <TableRow>
-                        <TableHead className="w-[50px]">#</TableHead>
-                        <TableHead className="min-w-[200px]">Product Name</TableHead>
-                        <TableHead className="w-[120px]">Quantity</TableHead>
-                        <TableHead className="w-[180px]">Component Status</TableHead>
-                        <TableHead className="w-[140px]">Department</TableHead>
-                        <TableHead className="min-w-[200px]">Issue Description</TableHead>
-                        <TableHead className="text-right w-[140px]">Actions</TableHead>
+                    <TableRow>
+                      <TableHead className="w-[50px]">#</TableHead>
+                      <TableHead className="min-w-[200px]">Product Name</TableHead>
+                      <TableHead className="w-[120px]">Quantity</TableHead>
+                      <TableHead className="w-[180px]">Component Status</TableHead>
+                      <TableHead className="w-[140px]">Department</TableHead>
+                      <TableHead className="min-w-[200px]">Issue Description</TableHead>
+                      <TableHead className="text-right w-[140px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -180,19 +125,19 @@ const BucketPage = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          {editingItem === item.product_name ? (
-                            <Input
-                              type="text"
-                              value={editForm.component_status}
-                              onChange={(e) => setEditForm({ ...editForm, component_status: e.target.value })}
-                              placeholder="Available, damaged..."
-                              className="h-8"
-                            />
-                          ) : item.component_status ? (
-                            <span className="text-sm text-foreground">{item.component_status}</span>
-                          ) : (
-                            <span className="text-muted-foreground/50 italic text-sm">—</span>
-                          )}
+                          <select
+                            value={item.component_status || ''}
+                            onChange={(e) => updateBucketItem(item.product_name, { component_status: e.target.value || null })}
+                            className="flex h-9 w-full appearance-none rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            aria-label={`Component status for ${item.product_name}`}
+                          >
+                            <option value="">Select status</option>
+                            {item.component_status && !['damaged', 'missing'].includes(item.component_status) && (
+                              <option value={item.component_status}>{item.component_status}</option>
+                            )}
+                            <option value="damaged">Damaged</option>
+                            <option value="missing">Missing</option>
+                          </select>
                         </TableCell>
                         <TableCell>
                           {editingItem === item.product_name ? (
@@ -215,21 +160,14 @@ const BucketPage = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          {editingItem === item.product_name ? (
-                            <textarea
-                              value={editForm.issue_description}
-                              onChange={(e) => setEditForm({ ...editForm, issue_description: e.target.value })}
-                              rows={1}
-                              className="flex min-h-[32px] w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                              placeholder="Describe..."
-                            />
-                          ) : (
-                            <span className="text-sm text-muted-foreground">
-                              {item.issue_description || (
-                                <span className="text-muted-foreground/50 italic">Not specified</span>
-                              )}
-                            </span>
-                          )}
+                          <textarea
+                            value={item.issue_description || ''}
+                            onChange={(e) => updateBucketItem(item.product_name, { issue_description: e.target.value })}
+                            rows={2}
+                            className="flex min-h-[56px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            placeholder="Describe the issue..."
+                            aria-label={`Issue description for ${item.product_name}`}
+                          />
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
@@ -284,16 +222,9 @@ const BucketPage = () => {
                 </Table>
               </div>
 
-              {/* Footer */}
               <div className="bg-secondary/30 px-6 py-4 border-t border-border">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-muted-foreground font-medium">
-                    Total Items: <span className="font-bold text-foreground ml-1">{bucket.length}</span>
-                  </div>
-                  <Button onClick={handleSubmit} size="lg" className="px-8 shadow-sm">
-                    <Send className="w-4 h-4 mr-2" />
-                    Proceed to Submit
-                  </Button>
+                <div className="text-sm text-muted-foreground font-medium">
+                  Total Items: <span className="font-bold text-foreground ml-1">{bucket.length}</span>
                 </div>
               </div>
             </Card>
@@ -307,7 +238,7 @@ const BucketPage = () => {
           <DialogHeader>
             <DialogTitle>Remove Item</DialogTitle>
             <DialogDescription>
-              Remove <span className="font-medium">"{itemToRemove}"</span> from the bucket?
+              Remove <span className="font-medium">"{itemToRemove}"</span> from this requisite?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">

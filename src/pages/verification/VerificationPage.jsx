@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import VerificationStepper from '@components/verification/VerificationStepper';
 import PANVerification from '@components/verification/PANVerification';
 import BankVerification from '@components/verification/BankVerification';
@@ -8,10 +7,13 @@ import Loader from '@components/common/Loader';
 import { useVerificationStore } from '@store/verificationStore';
 import { verificationApi } from '@api/verificationApi';
 import { VERIFICATION_STEPS } from '@utils/constants';
+import Button from '@components/common/Button';
+import { useToast } from '@hooks/useToast';
 
 const VerificationPage = () => {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const toast = useToast();
   const hasFetched = useRef(false);
 
   const {
@@ -28,10 +30,13 @@ const VerificationPage = () => {
     if (hasFetched.current) return;
     hasFetched.current = true;
     fetchVerificationStatus();
+    // The ref also prevents React StrictMode from issuing a duplicate request.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchVerificationStatus = async () => {
     setLoading(true);
+    setError('');
     try {
       const status = await verificationApi.getVerificationStatus();
       setVerificationStatus(status);
@@ -43,8 +48,10 @@ const VerificationPage = () => {
       } else {
         setCurrentStep(VERIFICATION_STEPS.DOCUMENT);
       }
-    } catch {
-      // Error already handled by axios interceptor; page stays in loading=false state
+    } catch (fetchError) {
+      const message = fetchError.message || 'Failed to load verification status';
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -74,6 +81,15 @@ const VerificationPage = () => {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader size="lg" text="Loading verification status..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mx-auto max-w-lg rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center">
+        <p className="mb-4 text-sm text-destructive">{error}</p>
+        <Button onClick={fetchVerificationStatus}>Retry</Button>
       </div>
     );
   }
