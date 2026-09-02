@@ -96,13 +96,13 @@ const BucketPage = () => {
                 <Table>
                   <TableHeader className="bg-secondary/40">
                     <TableRow>
-                      <TableHead className="w-[50px]">#</TableHead>
-                      <TableHead className="min-w-[200px]">Product Name</TableHead>
-                      <TableHead className="w-[120px]">Quantity</TableHead>
-                      <TableHead className="w-[180px]">Component Status</TableHead>
-                      <TableHead className="w-[140px]">Department</TableHead>
-                      <TableHead className="min-w-[200px]">Issue Description</TableHead>
-                      <TableHead className="text-right w-[140px]">Actions</TableHead>
+                      <TableHead className="w-12">#</TableHead>
+                      <TableHead className="min-w-48">Product Name</TableHead>
+                      <TableHead className="w-28">Quantity</TableHead>
+                      <TableHead className="w-44">Component Status</TableHead>
+                      <TableHead className="w-36">Department</TableHead>
+                      <TableHead className="min-w-48">Issue Description</TableHead>
+                      <TableHead className="text-right w-36">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -164,7 +164,7 @@ const BucketPage = () => {
                             value={item.issue_description || ''}
                             onChange={(e) => updateBucketItem(item.product_name, { issue_description: e.target.value })}
                             rows={2}
-                            className="flex min-h-[56px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            className="flex min-h-14 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                             placeholder="Describe the issue..."
                             aria-label={`Issue description for ${item.product_name}`}
                           />

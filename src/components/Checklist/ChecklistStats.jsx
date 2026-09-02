@@ -7,6 +7,7 @@ import {
   CheckBadgeIcon,
   ChartBarIcon
 } from '@heroicons/react/24/outline';
+import Card from '../common/Card';
 
 const ChecklistStats = () => {
   const stats = useChecklistStore(state => state.stats);
@@ -45,7 +46,7 @@ const ChecklistStats = () => {
   return (
     <div className="mt-6">
       {/* Progress Bar */}
-      <div className="ds-card p-6 mb-6">
+      <Card className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-medium text-foreground">Overall Progress</h3>
           <span className="text-sm font-semibold text-foreground">
@@ -61,14 +62,14 @@ const ChecklistStats = () => {
         <p className="text-xs text-muted-foreground mt-2">
           {stats.approvedCount} of {stats.totalItems} items completed
         </p>
-      </div>
+      </Card>
 
       {/* Stat Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, index) => (
-          <div
+          <Card
             key={index}
-            className="ds-card p-6 ds-card-hoverable"
+            hoverable
           >
             <div className="flex items-center justify-between">
               <div>
@@ -81,7 +82,7 @@ const ChecklistStats = () => {
                 <stat.icon className="h-6 w-6" />
               </div>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
     </div>

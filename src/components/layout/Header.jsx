@@ -19,6 +19,7 @@ import { verificationApi } from '@api/verificationApi';
 import { useVerificationStore } from '@store/verificationStore';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { getApiErrorMessage } from '../../api/apiErrors';
 
 const Header = () => {
   const { toggleSidebar } = useUIStore();
@@ -65,7 +66,7 @@ const Header = () => {
       toast.success('Verification data deleted');
       navigate('/verification', { replace: true });
     } catch (error) {
-      toast.error(error.message || 'Failed to delete verification data');
+      toast.error(getApiErrorMessage(error));
     } finally {
       setDeletingVerification(false);
     }

@@ -18,6 +18,7 @@ import { Card, CardContent } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { Label } from '@components/ui/label';
+import { getApiErrorMessage, getApiFieldErrors } from '../api/apiErrors';
 
 const SubmitPage = () => {
   const navigate = useNavigate();
@@ -31,6 +32,7 @@ const SubmitPage = () => {
   const [detailsError, setDetailsError] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const formatOrderState = (value) => {
     const normalized = String(value ?? '').trim().toLowerCase();
@@ -60,8 +62,7 @@ const SubmitPage = () => {
       setSODetails(details);
       return details;
     } catch (err) {
-      const message = err?.message || err?.data?.detail || 'Failed to fetch sales order details from Odoo.';
-      setDetailsError(message);
+      setDetailsError(getApiErrorMessage(err));
       return null;
     } finally {
       setDetailsLoading(false);
@@ -97,6 +98,7 @@ const SubmitPage = () => {
 
     setLoading(true);
     setError('');
+    setFieldErrors({});
 
     try {
       const resolvedDetails = await fetchSODetails();
@@ -123,7 +125,8 @@ const SubmitPage = () => {
       }, 2000);
 
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to submit requisite. Please try again.');
+      setError(getApiErrorMessage(err));
+      setFieldErrors(getApiFieldErrors(err));
     } finally {
       setLoading(false);
     }
@@ -178,13 +181,12 @@ const SubmitPage = () => {
 
       {/* Error Alert */}
       {error && (
-        <div className="mb-6 flex items-start gap-3 bg-destructive/10 border border-destructive/20 text-destructive p-4 rounded-md">
-          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-          <div className="text-sm">
-            <p className="font-semibold mb-1">Submission Error</p>
-            <p>{error}</p>
-          </div>
-        </div>
+        <Card className="mb-6 border-destructive/20 bg-destructive/10 text-destructive">
+          <CardContent role="alert" className="flex items-start gap-3 p-4">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div className="text-sm"><p className="font-semibold mb-1">Submission error</p><p>{error}</p></div>
+          </CardContent>
+        </Card>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -211,7 +213,7 @@ const SubmitPage = () => {
                         Fetching...
                       </div>
                     ) : soDetails ? (
-                      <div className="text-xs font-semibold text-emerald-700">
+                      <div className="text-xs font-semibold text-success">
                         Synced
                       </div>
                     ) : (
@@ -222,13 +224,15 @@ const SubmitPage = () => {
                   </div>
 
                   {detailsError ? (
-                    <div className="mt-4 flex items-start gap-3 rounded-md border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    <Card className="mt-4 border-warning/30 bg-warning/10">
+                      <CardContent className="flex items-start gap-3 p-4 text-sm text-warning-foreground">
                       <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                       <div>
                         <p className="font-semibold">SO details not available yet</p>
                         <p className="mt-1">{detailsError}</p>
                       </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   ) : soDetails ? (
                     <div className="mt-4 grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
                       <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-background px-4 py-3">
@@ -285,6 +289,7 @@ const SubmitPage = () => {
                     disabled
                     className="bg-muted opacity-70"
                   />
+                  {fieldErrors.sales_order ? <p className="text-xs text-destructive">{fieldErrors.sales_order}</p> : null}
                 </div>
 
                 {/* Cabinet Position */}
@@ -298,6 +303,7 @@ const SubmitPage = () => {
                     disabled
                     className="bg-muted opacity-70"
                   />
+                  {fieldErrors.cabinet_position ? <p className="text-xs text-destructive">{fieldErrors.cabinet_position}</p> : null}
                 </div>
 
                 {/* SR POC */}
@@ -311,6 +317,7 @@ const SubmitPage = () => {
                     onChange={(e) => setSrPoc(e.target.value)}
                     placeholder="Enter POC name or email"
                   />
+                  {fieldErrors.sr_poc ? <p className="text-xs text-destructive">{fieldErrors.sr_poc}</p> : null}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -321,6 +328,7 @@ const SubmitPage = () => {
                       value={expectedDelivery}
                       onChange={(e) => setExpectedDelivery(e.target.value)}
                     />
+                    {fieldErrors.expected_delivery ? <p className="text-xs text-destructive">{fieldErrors.expected_delivery}</p> : null}
                   </div>
 
                   <div className="space-y-2">
@@ -331,6 +339,7 @@ const SubmitPage = () => {
                       onChange={(e) => setDoNumber(e.target.value)}
                       placeholder="Enter delivery order number"
                     />
+                    {fieldErrors.do_number ? <p className="text-xs text-destructive">{fieldErrors.do_number}</p> : null}
                   </div>
                 </div>
 
@@ -388,19 +397,19 @@ const SubmitPage = () => {
                   Items to Submit
                   <span className="text-xs font-normal text-muted-foreground">{bucket.length} items</span>
                 </h3>
-                <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                <div className="max-h-72 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
                   {bucket.map((item, index) => (
                     <div key={item.product_name} className="text-xs bg-muted/40 p-3 rounded-md border border-border/50">
                       <div className="flex justify-between items-start mb-1 gap-2">
                         <span className="font-medium text-foreground break-words leading-tight">
                           {index + 1}. {item.product_name}
                         </span>
-                        <div className="bg-background border border-border px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0">
+                        <div className="bg-background border border-border px-1.5 py-0.5 rounded text-xs font-bold shrink-0">
                           x{item.quantity}
                         </div>
                       </div>
                       {item.component_status && (
-                        <div className="text-[11px] text-muted-foreground">
+                        <div className="text-xs text-muted-foreground">
                           Component Status: <span className="text-foreground">{item.component_status}</span>
                         </div>
                       )}

@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { IoCloudUploadOutline, IoClose, IoDocumentTextOutline } from 'react-icons/io5';
 import { formatters } from '@utils/formatters';
+import Button from './Button';
 
 const FileUpload = ({
   file,
@@ -142,14 +143,16 @@ const FileUpload = ({
               </p>
             </div>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onClear}
             aria-label={`Remove ${file.name}`}
-            className="text-muted-foreground hover:text-destructive transition-colors ml-2"
+            className="ml-2 size-8 p-0 text-muted-foreground hover:text-destructive"
             type="button"
           >
             <IoClose aria-hidden="true" size={20} />
-          </button>
+          </Button>
         </div>
       )}
 

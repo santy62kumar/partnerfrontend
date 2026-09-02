@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dashboardApi } from '@api/dashboardApi';
 import { bomAPI } from '@api/bomApi';
+import { getRoster } from '@api/rosterApi';
 
 // ─── Dashboard / Jobs ────────────────────────────────────────────
 
@@ -20,27 +21,51 @@ export const useJobDetail = (jobId) => {
         queryKey: ['partner-job', jobId],
         queryFn: async () => {
             const response = await dashboardApi.getJob(jobId);
-            return response.job || response.data;
+            const job = response.job || response.data;
+            return response.checklistsError ? { ...job, _partialError: response.checklistsError } : job;
         },
         enabled: !!jobId,
         staleTime: 2 * 60 * 1000, // 2 minutes — detail data may update more often
     });
 };
 
-export const useJobHistory = (jobId) => useQuery({
-    queryKey: ['partner-job-history', jobId],
-    queryFn: () => dashboardApi.getJobHistory(jobId),
-    enabled: !!jobId,
-    staleTime: 60 * 1000,
-});
-
-export const useAddJobNote = (jobId) => {
+// Starting a job refreshes the job itself, its activity log and the job list card.
+export const useStartJob = (jobId) => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (notes) => dashboardApi.addJobNote(jobId, notes),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['partner-job-history', jobId] }),
+        mutationFn: ({ otp, notes }) => (otp
+            ? dashboardApi.verifyStartOtp(jobId, otp, notes)
+            : dashboardApi.startJob(jobId, notes)),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['partner-job', jobId] });
+            queryClient.invalidateQueries({ queryKey: ['partner-job-history', jobId] });
+            queryClient.invalidateQueries({ queryKey: ['partner-jobs'] });
+        },
     });
 };
+
+export const useRequestStartOtp = (jobId) => useMutation({
+    mutationFn: () => dashboardApi.requestStartOtp(jobId),
+});
+
+// Finishing invalidates the same three views starting does.
+export const useFinishJob = (jobId) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ otp, notes, ...documents }) => (otp
+            ? dashboardApi.verifyEndOtp(jobId, otp, notes, documents)
+            : dashboardApi.finishJob(jobId, notes, documents)),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['partner-job', jobId] });
+            queryClient.invalidateQueries({ queryKey: ['partner-job-history', jobId] });
+            queryClient.invalidateQueries({ queryKey: ['partner-jobs'] });
+        },
+    });
+};
+
+export const useRequestEndOtp = (jobId) => useMutation({
+    mutationFn: () => dashboardApi.requestEndOtp(jobId),
+});
 
 export const useAttendance = () => {
     return useQuery({
@@ -59,9 +84,17 @@ export const useRecordAttendance = () => {
         mutationFn: (data) => dashboardApi.recordAttendance(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['partner-attendance'] });
+            queryClient.invalidateQueries({ queryKey: ['partner-roster'] });
         },
     });
 };
+
+export const useRoster = (dateFrom, dateTo = dateFrom) => useQuery({
+    queryKey: ['partner-roster', dateFrom, dateTo],
+    queryFn: () => getRoster({ date_from: dateFrom, date_to: dateTo }),
+    enabled: !!dateFrom,
+    staleTime: 60 * 1000,
+});
 
 export const useBilling = (jobId, enabled = true) => {
     return useQuery({

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
+import { Button } from '@components/ui/button';
 
 const BOMTreeNode = ({ node, depth = 0, selectedProducts, onToggle }) => {
   const [isExpanded, setIsExpanded] = useState(depth < 2);
@@ -18,16 +19,20 @@ const BOMTreeNode = ({ node, depth = 0, selectedProducts, onToggle }) => {
           }`}
         style={{ paddingLeft: `${depth * 24 + 12}px` }}
       >
-        <button
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          aria-label={isExpanded ? `Collapse ${node.product_name}` : `Expand ${node.product_name}`}
           onClick={toggleExpand}
-          className={`flex-shrink-0 ${!hasChildren ? 'invisible' : ''}`}
+          className={`shrink-0 ${!hasChildren ? 'invisible' : ''}`}
         >
           {isExpanded ? (
             <ChevronDown className="w-4 h-4 text-muted-foreground" />
           ) : (
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           )}
-        </button>
+        </Button>
 
         <span className="flex-1 text-sm">
           {node.product_name}

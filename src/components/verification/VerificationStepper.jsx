@@ -67,7 +67,7 @@ const VerificationStepper = ({ currentStep, isPanVerified, isBankVerified }) => 
                   >
                     {step.name}
                   </p>
-                  <p className="text-[11px] text-muted-foreground mt-1 hidden sm:block font-medium">
+                  <p className="text-xs text-muted-foreground mt-1 hidden sm:block font-medium">
                     {step.description}
                   </p>
                 </div>
@@ -76,13 +76,12 @@ const VerificationStepper = ({ currentStep, isPanVerified, isBankVerified }) => 
               {index < steps.length - 1 && (
                 <div
                   className={`
-                    flex-1 h-0.5 mx-[-1rem] transition-all relative z-0
+                    flex-1 h-0.5 -mx-4 -mt-16 transition-all relative z-0
                     ${getStepStatus(steps[index + 1].id) === 'completed' || getStepStatus(steps[index + 1].id) === 'current'
                       ? 'bg-primary'
                       : 'bg-muted'
                     }
                   `}
-                  style={{ marginTop: '-4rem' }}
                 />
               )}
             </React.Fragment>

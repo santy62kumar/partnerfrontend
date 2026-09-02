@@ -70,7 +70,7 @@ const StatsCards = ({ stats, totalJobs = 0, completionRate = 0, isInternal = fal
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="text-xl sm:text-2xl font-bold font-heading truncate">{card.value}</div>
-            <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-medium truncate">
+            <p className="mt-1 truncate text-xs font-medium text-muted-foreground">
               {card.subtitle}
             </p>
           </CardContent>

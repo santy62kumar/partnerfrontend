@@ -3,8 +3,10 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeftIcon } from '@heroicons/react/24/outline';
+import Card from '../common/Card';
+import Button from '../common/Button';
 
-const ChecklistHeader = ({  checklistName, checklistDescription }) => {
+const ChecklistHeader = ({ jobTitle, checklistName, checklistDescription }) => {
   const navigate = useNavigate();
 
   const handleBack = () => {
@@ -12,23 +14,26 @@ const ChecklistHeader = ({  checklistName, checklistDescription }) => {
   };
 
   return (
-    <div className="ds-card p-6">
-      <button
+    <Card>
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={handleBack}
-        className="flex items-center space-x-2 text-sm text-muted-foreground hover:text-foreground mb-4 focus:outline-none focus:ring-2 focus:ring-ring/50 rounded"
+        className="mb-4"
       >
         <ArrowLeftIcon className="h-4 w-4" />
         <span>Back to Job</span>
-      </button>
+      </Button>
 
       <div className="mt-4">
         <p className="text-sm text-muted-foreground uppercase tracking-wide">Checklist</p>
         <h2 className="text-xl font-semibold text-foreground">{checklistName}</h2>
+        {jobTitle ? <p className="mt-1 text-sm font-medium text-foreground">{jobTitle}</p> : null}
         {checklistDescription && (
           <p className="text-sm text-muted-foreground mt-2">{checklistDescription}</p>
         )}
       </div>
-    </div>
+    </Card>
   );
 };
 

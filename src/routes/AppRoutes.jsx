@@ -3,23 +3,26 @@ import PrivateRoute from './PrivateRoute';
 import PublicRoute from './PublicRoute';
 import React, { useEffect } from 'react';
 
-// Pages
-import RegisterPage from '@pages/auth/RegisterPage';
-import LoginPage from '@pages/auth/LoginPage';
-import OTPPage from '@pages/auth/OTPPage';
-import VerificationPage from '@pages/verification/VerificationPage';
-import DashboardPage from '@pages/dashboard/DashboardPage';
-import JobDetailPage from '@pages/dashboard/JobDetailPage';
-import NotFoundPage from '@pages/NotFoundPage';
-import ChecklistPage from '@components/Checklist/ChecklistPage';
-import apiClient from '../api/axiosConfig';
+import { authApi } from '../api/authApi';
 import { useAuthStore } from '@store/authStore';
-import SiteRequisitePage from '../pages/SiteRequisitePage';
-import SiteRequisiteReviewPage from '../pages/SiteRequisiteReviewPage';
-import HistoryPage from '../pages/HistoryPage';
-import SiteGRNPage from '../pages/SiteGRNPage';
-import AttendancePage from '../pages/AttendancePage';
-import DailyReportPage from '../pages/DailyReportPage';
+import LoadingSpinner from '@components/common/LoadingSpinner';
+
+// Pages are split per route: a partner on site loads the screen they opened, not the whole app.
+const RegisterPage = React.lazy(() => import('@pages/auth/RegisterPage'));
+const LoginPage = React.lazy(() => import('@pages/auth/LoginPage'));
+const OTPPage = React.lazy(() => import('@pages/auth/OTPPage'));
+const VerificationPage = React.lazy(() => import('@pages/verification/VerificationPage'));
+const DashboardPage = React.lazy(() => import('@pages/dashboard/DashboardPage'));
+const JobDetailPage = React.lazy(() => import('@pages/dashboard/JobDetailPage'));
+const NotFoundPage = React.lazy(() => import('@pages/NotFoundPage'));
+const ChecklistPage = React.lazy(() => import('@components/Checklist/ChecklistPage'));
+const SiteRequisitePage = React.lazy(() => import('../pages/SiteRequisitePage'));
+const SiteRequisiteReviewPage = React.lazy(() => import('../pages/SiteRequisiteReviewPage'));
+const HistoryPage = React.lazy(() => import('../pages/HistoryPage'));
+const SiteGRNPage = React.lazy(() => import('../pages/SiteGRNPage'));
+const AttendancePage = React.lazy(() => import('../pages/AttendancePage'));
+const DailyReportPage = React.lazy(() => import('../pages/DailyReportPage'));
+const RosterPage = React.lazy(() => import('../pages/RosterPage'));
 
 
 function AppRoutes() {
@@ -33,10 +36,9 @@ function AppRoutes() {
       // Background verify — refresh the profile silently
       const verifyInBackground = async () => {
         try {
-          const verifyRes = await apiClient.get('/auth/verify-token');
-          if (verifyRes.data.valid) {
-            const res = await apiClient.get('/auth/me');
-            setUser(res.data);
+          const verifyRes = await authApi.verifyToken();
+          if (verifyRes.valid) {
+            setUser(await authApi.me());
           } else {
             clearAuth();
           }
@@ -66,7 +68,8 @@ function AppRoutes() {
 
   return (
     <BrowserRouter>
-      <Routes>
+      <React.Suspense fallback={<LoadingSpinner message="Loading…" />}>
+        <Routes>
         {/* Public Routes */}
         <Route element={<PublicRoute />}>
           <Route path="/register" element={<RegisterPage />} />
@@ -88,6 +91,7 @@ function AppRoutes() {
           <Route path="/site-requisite-history" element={<HistoryPage />} />
           <Route path="/site-grn" element={<SiteGRNPage />} />
           <Route path="/attendance" element={<AttendancePage />} />
+          <Route path="/roster" element={<RosterPage />} />
           <Route path="/daily-report" element={<DailyReportPage />} />
         </Route>
 
@@ -96,7 +100,8 @@ function AppRoutes() {
 
         {/* 404 */}
         <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+        </Routes>
+      </React.Suspense>
     </BrowserRouter>
   );
 }

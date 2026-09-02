@@ -7,6 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import useChecklistStore from '@store/checklistStore';
 import { useDashboardStore } from '@store/dashboardStore';
 import useRequisiteStore from '@store/requisiteStore';
+import { getApiErrorMessage, getApiFieldErrors } from '@api/apiErrors';
 
 export const useAuth = () => {
   const queryClient = useQueryClient();
@@ -28,9 +29,9 @@ export const useAuth = () => {
       navigate('/login');
       return { success: true, data: response };
     } catch (error) {
-      const message = error.message || 'Registration failed';
+      const message = getApiErrorMessage(error);
       toast.error(message);
-      return { success: false, error: message };
+      return { success: false, error: message, fieldErrors: getApiFieldErrors(error) };
     }
   };
 
@@ -42,9 +43,9 @@ export const useAuth = () => {
       navigate('/verify-otp');
       return { success: true, data: response };
     } catch (error) {
-      const message = error.message || 'Login failed';
+      const message = getApiErrorMessage(error);
       toast.error(message);
-      return { success: false, error: message };
+      return { success: false, error: message, fieldErrors: getApiFieldErrors(error) };
     }
   };
 
@@ -74,9 +75,9 @@ export const useAuth = () => {
 
       return { success: true, data: response };
     } catch (error) {
-      const message = error.message || 'OTP verification failed';
+      const message = getApiErrorMessage(error);
       toast.error(message);
-      return { success: false, error: message };
+      return { success: false, error: message, fieldErrors: getApiFieldErrors(error) };
     }
   }, [phoneNumber, setUser, navigate]);
 
@@ -86,9 +87,9 @@ export const useAuth = () => {
       toast.success('OTP resent successfully!');
       return { success: true, data: response };
     } catch (error) {
-      const message = error.message || 'Failed to resend OTP';
+      const message = getApiErrorMessage(error);
       toast.error(message);
-      return { success: false, error: message };
+      return { success: false, error: message, fieldErrors: getApiFieldErrors(error) };
     }
   };
 

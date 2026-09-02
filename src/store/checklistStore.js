@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { checklistApi } from '../api/checklistApi';
+import { getApiErrorMessage } from '../api/apiErrors';
 
 /**
  * Zustand Store for Checklist Management
@@ -37,6 +38,7 @@ const useChecklistStore = create(
       isLoading: false,
       isSaving: false,
       error: null,
+      warning: null,
       
       // Dirty tracking for batch updates
       dirtyItems: new Set(),
@@ -51,7 +53,7 @@ const useChecklistStore = create(
        * Fetch complete checklist with all items
        */
       fetchChecklist: async (jobId, checklistId) => {
-        set({ isLoading: true, error: null });
+        set({ isLoading: true, error: null, warning: null });
         
         try {
           const data = await checklistApi.getChecklist(jobId, checklistId);
@@ -75,7 +77,7 @@ const useChecklistStore = create(
           });
         } catch (error) {
           set({
-            error: error.response?.data?.detail || 'Failed to fetch checklist',
+            error: getApiErrorMessage(error),
             isLoading: false,
           });
           throw error;
@@ -150,7 +152,7 @@ saveChanges: async () => {
     }
   }
   
-  set({ isSaving: true, error: null });
+  set({ isSaving: true, error: null, warning: null });
   
   const updates = Array.from(pendingChanges.entries()).map(([id, changes]) => ({
     checklist_item_id: id,
@@ -176,6 +178,7 @@ saveChanges: async () => {
       pendingChanges: new Map(),
       itemsBackup: [],
       isSaving: false,
+      warning: response.partial_failure ? response.partial_error : null,
     });
     
     return response;
@@ -186,7 +189,7 @@ saveChanges: async () => {
       stats: calculateStats(itemsBackup),
       dirtyItems: new Set(),
       pendingChanges: new Map(),
-      error: error.response?.data?.detail || 'Failed to save changes',
+      error: getApiErrorMessage(error),
       isSaving: false,
     });
     throw error;
@@ -243,7 +246,7 @@ saveChanges: async () => {
       uploadDocument: async (itemId, file, comment = null) => {
         const { jobId, checklist } = get();
         
-        set({ isSaving: true, error: null });
+        set({ isSaving: true, error: null, warning: null });
         
         try {
           const response = await checklistApi.uploadDocument(
@@ -272,7 +275,7 @@ saveChanges: async () => {
           return response;
         } catch (error) {
           set({
-            error: error.response?.data?.detail || 'Failed to upload document',
+            error: getApiErrorMessage(error),
             isSaving: false,
           });
           throw error;
@@ -281,7 +284,7 @@ saveChanges: async () => {
 
       uploadChecklistDocument: async (file) => {
         const { jobId, checklist } = get();
-        set({ isSaving: true, error: null });
+        set({ isSaving: true, error: null, warning: null });
         try {
           const response = await checklistApi.uploadChecklistDocument(jobId, checklist.id, file);
           set({
@@ -290,7 +293,7 @@ saveChanges: async () => {
           });
           return response;
         } catch (error) {
-          set({ error: error?.message || 'Failed to upload checklist document', isSaving: false });
+          set({ error: getApiErrorMessage(error), isSaving: false });
           throw error;
         }
       },
@@ -335,6 +338,7 @@ saveChanges: async () => {
           isLoading: false,
           isSaving: false,
           error: null,
+          warning: null,
           dirtyItems: new Set(),
           pendingChanges: new Map(),
           itemsBackup: [],

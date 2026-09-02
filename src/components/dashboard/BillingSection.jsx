@@ -5,6 +5,8 @@ import { useBilling, useRequestAdditionalInvoice, useRequestInvoice } from '@hoo
 import { useToast } from '@hooks/useToast';
 import { IoReceiptOutline, IoCheckmarkCircleOutline, IoTimeOutline, IoCloseCircleOutline, IoPrintOutline } from 'react-icons/io5';
 import { dashboardApi } from '@api/dashboardApi';
+import StatusBadge from '@components/common/StatusBadge';
+import { getApiErrorMessage, getApiFieldErrors } from '../../api/apiErrors';
 
 const BillingSection = ({ job }) => {
   const toast = useToast();
@@ -15,6 +17,8 @@ const BillingSection = ({ job }) => {
   const [showAdditionalForm, setShowAdditionalForm] = React.useState(false);
   const [completionPercentage, setCompletionPercentage] = React.useState('');
   const [invoiceNotes, setInvoiceNotes] = React.useState('');
+  const [formError, setFormError] = React.useState('');
+  const [fieldErrors, setFieldErrors] = React.useState({});
 
   const invoiceRequest = billing?.invoice_request;
   const status = invoiceRequest?.status;
@@ -24,7 +28,7 @@ const BillingSection = ({ job }) => {
       await requestInvoice();
       toast.success('Invoice request submitted');
     } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Failed to submit invoice request');
+      toast.error(getApiErrorMessage(err));
     }
   };
 
@@ -35,13 +39,15 @@ const BillingSection = ({ job }) => {
       await dashboardApi.downloadInvoice(job.id, job.name, invoiceRequestId);
       toast.success('Bill downloaded');
     } catch (err) {
-      toast.error(err?.response?.data?.detail || err?.message || 'Failed to download bill');
+      toast.error(getApiErrorMessage(err));
     } finally {
       setDownloadingId(null);
     }
   };
 
   const handleAdditionalRequest = async () => {
+    setFormError('');
+    setFieldErrors({});
     const percentage = completionPercentage === '' ? undefined : Number(completionPercentage);
     if (percentage !== undefined && (!Number.isInteger(percentage) || percentage < 0 || percentage > 100)) {
       toast.error('Completion percentage must be a whole number from 0 to 100');
@@ -57,7 +63,10 @@ const BillingSection = ({ job }) => {
       setShowAdditionalForm(false);
       toast.success('Additional invoice request submitted');
     } catch (err) {
-      toast.error(err?.response?.data?.detail || err?.message || 'Failed to submit invoice request');
+      const message = getApiErrorMessage(err);
+      setFormError(message);
+      setFieldErrors(getApiFieldErrors(err));
+      toast.error(message);
     }
   };
 
@@ -69,10 +78,10 @@ const BillingSection = ({ job }) => {
     );
   }
 
-  if (error) {
+  if (error && !billing) {
     return (
       <Card title="Billing">
-        <p className="mb-3 text-sm text-destructive">Could not load billing information.</p>
+        <p className="mb-3 text-sm text-destructive">{getApiErrorMessage(error)}</p>
         <Button variant="secondary" size="sm" onClick={() => refetch()}>Retry</Button>
       </Card>
     );
@@ -83,6 +92,7 @@ const BillingSection = ({ job }) => {
       title="Billing"
       headerRight={<IoReceiptOutline size={18} className="text-muted-foreground" />}
     >
+      {error ? <Card className="mb-4 border-warning/30 bg-warning/10" padding="p-3"><p className="text-sm text-warning">Showing saved billing data. {getApiErrorMessage(error)}</p></Card> : null}
       {!invoiceRequest && (
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
@@ -101,9 +111,10 @@ const BillingSection = ({ job }) => {
 
       {status === 'pending' && (
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <div className="flex items-center gap-2 text-warning">
             <IoTimeOutline size={18} />
             <p className="text-sm font-medium">Invoice request pending admin approval</p>
+            <StatusBadge tone="warning">Pending</StatusBadge>
           </div>
           <p className="text-xs text-muted-foreground">
             Requested on {new Date(invoiceRequest.requested_at).toLocaleDateString('en-IN')}
@@ -113,7 +124,7 @@ const BillingSection = ({ job }) => {
 
       {status === 'rejected' && (
         <div className="space-y-3">
-          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+          <div className="flex items-start gap-2 text-destructive">
             <IoCloseCircleOutline size={18} className="mt-0.5 shrink-0" />
             <div>
               <p className="text-sm font-medium">Invoice request rejected</p>
@@ -127,9 +138,10 @@ const BillingSection = ({ job }) => {
 
       {status === 'approved' && (
         <div className="space-y-4">
-          <div className="flex items-center gap-2 text-green-600 bg-green-50 border border-green-200 rounded-lg p-3">
+          <div className="flex items-center gap-2 text-success">
             <IoCheckmarkCircleOutline size={18} />
             <p className="text-sm font-medium">Invoice approved</p>
+            <StatusBadge tone="success">Approved</StatusBadge>
           </div>
           <div className="flex justify-end">
             <Button
@@ -160,6 +172,7 @@ const BillingSection = ({ job }) => {
             </Button>
           ) : (
             <div className="space-y-3">
+              {formError ? <p role="alert" className="text-sm text-destructive">{formError}</p> : null}
               <label className="block space-y-1">
                 <span className="text-xs font-medium text-muted-foreground">Completion percentage (optional)</span>
                 <input
@@ -171,6 +184,7 @@ const BillingSection = ({ job }) => {
                   onChange={(event) => setCompletionPercentage(event.target.value)}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                 />
+                {fieldErrors.completion_percentage ? <span className="text-xs text-destructive">{fieldErrors.completion_percentage}</span> : null}
               </label>
               <label className="block space-y-1">
                 <span className="text-xs font-medium text-muted-foreground">Notes (optional)</span>
@@ -181,6 +195,7 @@ const BillingSection = ({ job }) => {
                   onChange={(event) => setInvoiceNotes(event.target.value)}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                 />
+                {fieldErrors.notes ? <span className="text-xs text-destructive">{fieldErrors.notes}</span> : null}
               </label>
               <div className="flex gap-2">
                 <Button size="sm" onClick={handleAdditionalRequest} disabled={isAdditionalPending}>

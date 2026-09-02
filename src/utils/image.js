@@ -24,7 +24,7 @@ const toJpegFile = async (source, sourceWidth, sourceHeight, filename) => {
 
   const context = canvas.getContext('2d');
   if (!context) return null;
-  context.fillStyle = '#ffffff';
+  context.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
   context.fillRect(0, 0, width, height);
   context.drawImage(source, 0, 0, width, height);
 

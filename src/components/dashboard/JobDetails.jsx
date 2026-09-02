@@ -1,9 +1,12 @@
 import React from 'react';
 import Card from '@components/common/Card';
 import { formatters } from '@utils/formatters';
-import { JOB_STATUS_COLORS, JOB_STATUS_LABELS } from '@utils/constants';
+import { JOB_STATUS_LABELS } from '@utils/constants';
+import { JOB_STATUS_TONE } from '@utils/status';
+import StatusBadge from '@components/common/StatusBadge';
 import { useToast } from '@hooks/useToast';
 import { useAuthStore } from '@/store/authStore';
+import Button from '@components/common/Button';
 import {
   IoPersonOutline,
   IoReaderOutline,
@@ -13,6 +16,7 @@ import {
   IoResizeOutline,
   IoMapOutline,
   IoCopyOutline,
+  IoDocumentAttachOutline,
 } from 'react-icons/io5';
 
 const JobDetails = ({ job }) => {
@@ -44,9 +48,10 @@ const JobDetails = ({ job }) => {
     {
       label: 'Address',
       value: (
-        <button
+        <Button
+          variant="ghost"
           type="button"
-          className="line-clamp-3 text-left break-words hover:text-primary transition-colors"
+          className="h-auto justify-start whitespace-normal p-0 text-left break-words hover:text-primary"
           title={[job.address_line_1, job.address_line_2, job.city, job.state, job.pincode].filter(Boolean).join(', ')}
           onClick={() => copyToClipboard([job.address_line_1, job.address_line_2, job.city, job.state, job.pincode].filter(Boolean).join(', '), 'Address')}
         >
@@ -59,7 +64,7 @@ const JobDetails = ({ job }) => {
               </span>
             </>
           )}
-        </button>
+        </Button>
       ),
       icon: IoLocationOutline,
     },
@@ -98,6 +103,20 @@ const JobDetails = ({ job }) => {
       value: formatters.date(job.delivery_date) || 'N/A',
       icon: IoCalendarOutline,
     },
+    ...(job.drawing_document_link ? [{
+      label: 'Job Drawing',
+      value: (
+        <a
+          href={job.drawing_document_link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+        >
+          Open drawing
+        </a>
+      ),
+      icon: IoDocumentAttachOutline,
+    }] : []),
   ];
 
   return (
@@ -109,9 +128,9 @@ const JobDetails = ({ job }) => {
               <h3 className="text-xl font-bold font-heading text-foreground mb-2">
                 {job.name}
               </h3>
-              <span className={JOB_STATUS_COLORS[job.status]}>
+              <StatusBadge tone={JOB_STATUS_TONE[job.status]}>
                 {JOB_STATUS_LABELS[job.status] || job.status}
-              </span>
+              </StatusBadge>
             </div>
             {!isInternal && (
               <div className="text-right">
@@ -142,15 +161,17 @@ const JobDetails = ({ job }) => {
                 </div>
               </div>
               {detail.label === 'Address' && (job.address_line_1 || job.address_line_2 || job.city) && (
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   type="button"
                   onClick={() => copyToClipboard([job.address_line_1, job.address_line_2, job.city, job.state, job.pincode].filter(Boolean).join(', '), 'Address')}
-                  className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-card rounded-md transition-colors"
+                  className="size-8 p-0 text-muted-foreground hover:bg-card hover:text-foreground"
                   aria-label="Copy address"
                   title="Copy address"
                 >
                   <IoCopyOutline size={16} />
-                </button>
+                </Button>
               )}
             </div>
           ))}

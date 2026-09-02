@@ -7,6 +7,7 @@ import { CheckCircle2, Lock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import FileUpload from '@components/common/FileUpload';
+import { getApiErrorMessage } from '@api/apiErrors';
 
 const DocumentUpload = ({ canProceed, isDocumentUploaded }) => {
   const toast = useToast();
@@ -35,7 +36,7 @@ const DocumentUpload = ({ canProceed, isDocumentUploaded }) => {
       setUploaded(true);
       clearFile();
     } catch (err) {
-      const message = err.message || 'Document upload failed';
+      const message = getApiErrorMessage(err);
       toast.error(message);
     } finally {
       setUploading(false);
@@ -72,7 +73,7 @@ const DocumentUpload = ({ canProceed, isDocumentUploaded }) => {
         <CardContent className="pt-8 pb-8 text-center flex flex-col items-center">
           <CheckCircle2 className="mx-auto mb-4 h-16 w-16 text-success" />
           <h3 className="text-xl font-semibold text-foreground mb-2">Document Uploaded Successfully</h3>
-          <p className="text-muted-foreground mb-6">Your verification applies are complete. You can now access the dashboard.</p>
+          <p className="text-muted-foreground mb-6">Your verification steps are complete. You can now access the dashboard.</p>
           <Button size="lg" onClick={handleContinue}>
             Continue to Dashboard
           </Button>

@@ -9,6 +9,7 @@ import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { Label } from '@components/ui/label';
 import KYCConsentModal from './KYCConsentModal';
+import { getApiErrorMessage, getApiFieldErrors } from '@api/apiErrors';
 
 const BankVerification = ({ onSuccess, isBankVerified, canProceed }) => {
   const toast = useToast();
@@ -57,14 +58,20 @@ const BankVerification = ({ onSuccess, isBankVerified, canProceed }) => {
 
     setLoading(true);
     try {
-      await verificationApi.verifyBank(
+      const status = await verificationApi.verifyBank(
         formData.accountNumber,
         formData.ifsc
       );
       toast.success('Bank details verified successfully!');
-      onSuccess();
+      onSuccess(status);
     } catch (err) {
-      const message = err.message || 'Bank verification failed';
+      const fieldErrors = getApiFieldErrors(err);
+      setErrors((current) => ({
+        ...current,
+        ...(fieldErrors.account_number ? { accountNumber: fieldErrors.account_number } : {}),
+        ...(fieldErrors.ifsc ? { ifsc: fieldErrors.ifsc } : {}),
+      }));
+      const message = getApiErrorMessage(err);
       toast.error(message);
     } finally {
       setLoading(false);

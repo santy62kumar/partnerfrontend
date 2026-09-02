@@ -10,24 +10,24 @@ function App() {
         toastOptions={{
           duration: 3200,
           style: {
-            background: '#fffaf6',
-            color: '#3a1a1a',
-            border: '1px solid #dcd8d2',
-            borderRadius: '10px',
-            boxShadow: '0 8px 24px rgba(58, 26, 26, 0.12)',
+            background: 'var(--popover)',
+            color: 'var(--popover-foreground)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: 'var(--shadow-elevated)',
           },
           success: {
             duration: 3000,
             iconTheme: {
-              primary: '#27864a',
-              secondary: '#fff',
+              primary: 'var(--color-success)',
+              secondary: 'var(--color-success-foreground)',
             },
           },
           error: {
             duration: 4000,
             iconTheme: {
-              primary: '#c0392b',
-              secondary: '#fff',
+              primary: 'var(--color-destructive)',
+              secondary: 'var(--color-destructive-foreground)',
             },
           },
         }}

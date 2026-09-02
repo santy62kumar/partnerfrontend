@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import StatsCards from '@components/dashboard/StatsCards';
+import TodayCard from '@components/dashboard/TodayCard';
 import JobFilters from '@components/dashboard/JobFilters';
 import JobList from '@components/dashboard/JobList';
 import Loader from '@components/common/Loader';
@@ -12,6 +13,8 @@ import { Input } from '@components/ui/input';
 import { Button } from '@components/ui/button';
 import { useAuthStore } from '@/store/authStore';
 import { Search } from 'lucide-react';
+import StatusBadge from '../../components/common/StatusBadge';
+import { getApiErrorMessage } from '../../api/apiErrors';
 
 const DashboardPage = () => {
   const user = useAuthStore((state) => state.user);
@@ -28,7 +31,7 @@ const DashboardPage = () => {
 
   useEffect(() => {
     if (error) {
-      toast.error(error.message || 'Failed to fetch jobs');
+      toast.error(getApiErrorMessage(error));
     }
   }, [error, toast]);
 
@@ -40,11 +43,11 @@ const DashboardPage = () => {
     );
   }
 
-  if (error) {
+  if (error && allJobs.length === 0) {
     return (
       <Card className="mx-auto max-w-lg border-destructive/30">
         <CardContent className="space-y-4 p-8 text-center">
-          <p className="text-sm text-destructive">Could not load your jobs.</p>
+          <p className="text-sm text-destructive">{getApiErrorMessage(error)}</p>
           <Button variant="outline" onClick={() => refetch()}>Try again</Button>
         </CardContent>
       </Card>
@@ -76,12 +79,11 @@ const DashboardPage = () => {
         </p>
       </div>
 
-      <StatsCards
-        stats={stats}
-        totalJobs={totalJobs}
-        completionRate={completionRate}
-        isInternal={user?.is_internal}
-      />
+      <TodayCard />
+
+      {error ? (
+        <Card className="border-warning/30 bg-warning/10"><CardContent role="alert" className="p-4 text-sm text-warning">Showing saved jobs. {getApiErrorMessage(error)}</CardContent></Card>
+      ) : null}
 
       <div className="space-y-4 pt-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-1">
@@ -93,11 +95,7 @@ const DashboardPage = () => {
               Focus your next actions by status and due date.
             </p>
           </div>
-          <div className="bg-secondary px-3 py-1 rounded-full border border-border/50">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <span className="text-foreground mr-1">{totalJobs}</span> Total Jobs
-            </p>
-          </div>
+          <StatusBadge>{totalJobs} total jobs</StatusBadge>
         </div>
 
         <JobFilters />
@@ -119,6 +117,13 @@ const DashboardPage = () => {
           </CardContent>
         </Card>
       </div>
+
+      <StatsCards
+        stats={stats}
+        totalJobs={totalJobs}
+        completionRate={completionRate}
+        isInternal={user?.is_internal}
+      />
     </div>
   );
 };

@@ -9,6 +9,7 @@ import { verificationApi } from '@api/verificationApi';
 import { VERIFICATION_STEPS } from '@utils/constants';
 import Button from '@components/common/Button';
 import { useToast } from '@hooks/useToast';
+import { getApiErrorMessage } from '@api/apiErrors';
 
 const VerificationPage = () => {
   const [loading, setLoading] = useState(true);
@@ -49,7 +50,7 @@ const VerificationPage = () => {
         setCurrentStep(VERIFICATION_STEPS.DOCUMENT);
       }
     } catch (fetchError) {
-      const message = fetchError.message || 'Failed to load verification status';
+      const message = getApiErrorMessage(fetchError);
       setError(message);
       toast.error(message);
     } finally {
@@ -57,23 +58,13 @@ const VerificationPage = () => {
     }
   };
 
-  const handlePanSuccess = async () => {
-    try {
-      const status = await verificationApi.getVerificationStatus();
-      setVerificationStatus(status);
-    } catch {
-      // Non-fatal: step navigation still proceeds
-    }
+  const handlePanSuccess = (status) => {
+    setVerificationStatus(status);
     nextStep();
   };
 
-  const handleBankSuccess = async () => {
-    try {
-      const status = await verificationApi.getVerificationStatus();
-      setVerificationStatus(status);
-    } catch {
-      // Non-fatal: step navigation still proceeds
-    }
+  const handleBankSuccess = (status) => {
+    setVerificationStatus(status);
     nextStep();
   };
 
@@ -89,7 +80,7 @@ const VerificationPage = () => {
     return (
       <div className="mx-auto max-w-lg rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center">
         <p className="mb-4 text-sm text-destructive">{error}</p>
-        <Button onClick={fetchVerificationStatus}>Retry</Button>
+        <Button onClick={fetchVerificationStatus} loading={loading} loadingLabel="Retrying…">Retry</Button>
       </div>
     );
   }

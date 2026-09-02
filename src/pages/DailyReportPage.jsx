@@ -16,6 +16,7 @@ import {
   normalizeReport,
 } from "@utils/dailyReport";
 import { IoDocumentTextOutline } from "react-icons/io5";
+import { getApiErrorMessage, getApiFieldErrors } from "@api/apiErrors";
 
 const DailyReportPage = () => {
   const toast = useToast();
@@ -35,7 +36,12 @@ const DailyReportPage = () => {
   const [reportDate, setReportDate] = useState(addDaysISO(0));
   const [reportData, setReportData] = useState(emptyReport);
   const [generating, setGenerating] = useState(false);
+  const [serverErrors, setServerErrors] = useState({});
   const progressPhotos = useProgressPhotos();
+  const updateManual = (field, apiField) => (event) => {
+    setManualJob((current) => ({ ...current, [field]: event.target.value }));
+    setServerErrors((current) => ({ ...current, [apiField]: "" }));
+  };
 
   const handleGenerate = async (event) => {
     event.preventDefault();
@@ -53,6 +59,7 @@ const DailyReportPage = () => {
     }
 
     setGenerating(true);
+    setServerErrors({});
     try {
       await dashboardApi.generateDailyReport({
         jobId,
@@ -63,7 +70,8 @@ const DailyReportPage = () => {
       });
       toast.success("Daily Installation Report downloaded");
     } catch (err) {
-      toast.error(err.message || "Could not generate the report");
+      setServerErrors(getApiFieldErrors(err));
+      toast.error(getApiErrorMessage(err));
     } finally {
       setGenerating(false);
     }
@@ -75,7 +83,7 @@ const DailyReportPage = () => {
         {jobsError && (
           <div className="flex flex-wrap items-center gap-3 rounded-lg border border-destructive/40 p-3">
             <p className="flex-1 text-sm text-destructive">
-              Could not load dashboard jobs.
+              {jobsError.message}
             </p>
             <Button
               type="button"
@@ -94,7 +102,7 @@ const DailyReportPage = () => {
             </span>
             <select
               value={jobId}
-              onChange={(event) => setJobId(event.target.value)}
+              onChange={(event) => { setJobId(event.target.value); setServerErrors((current) => ({ ...current, job_id: "" })); }}
               required
               disabled={jobsLoading}
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
@@ -113,6 +121,8 @@ const DailyReportPage = () => {
                 Job not listed — enter details manually
               </option>
             </select>
+            {serverErrors.job_id ? <span role="alert" className="text-xs text-destructive">{serverErrors.job_id}</span> : null}
+            {!jobsLoading && jobs.length === 0 && !jobsError ? <span className="text-xs text-muted-foreground">No assigned jobs. Use the manual option below.</span> : null}
           </label>
 
           <label className="flex flex-col gap-1">
@@ -123,10 +133,11 @@ const DailyReportPage = () => {
               type="date"
               value={reportDate}
               max={addDaysISO(0)}
-              onChange={(event) => setReportDate(event.target.value)}
+              onChange={(event) => { setReportDate(event.target.value); setServerErrors((current) => ({ ...current, report_date: "" })); }}
               required
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
             />
+            {serverErrors.report_date ? <span role="alert" className="text-xs text-destructive">{serverErrors.report_date}</span> : null}
           </label>
         </div>
 
@@ -149,14 +160,10 @@ const DailyReportPage = () => {
                   value={manualJob.projectName}
                   maxLength={255}
                   required
-                  onChange={(event) =>
-                    setManualJob((current) => ({
-                      ...current,
-                      projectName: event.target.value,
-                    }))
-                  }
+                  onChange={updateManual("projectName", "project_name")}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                 />
+                {serverErrors.project_name ? <span role="alert" className="text-xs text-destructive">{serverErrors.project_name}</span> : null}
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground">
@@ -165,14 +172,10 @@ const DailyReportPage = () => {
                 <input
                   value={manualJob.salesOrder}
                   maxLength={100}
-                  onChange={(event) =>
-                    setManualJob((current) => ({
-                      ...current,
-                      salesOrder: event.target.value,
-                    }))
-                  }
+                  onChange={updateManual("salesOrder", "sales_order")}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                 />
+                {serverErrors.sales_order ? <span role="alert" className="text-xs text-destructive">{serverErrors.sales_order}</span> : null}
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground">
@@ -182,14 +185,10 @@ const DailyReportPage = () => {
                   value={manualJob.projectSupervisor}
                   maxLength={255}
                   placeholder="Defaults to your profile"
-                  onChange={(event) =>
-                    setManualJob((current) => ({
-                      ...current,
-                      projectSupervisor: event.target.value,
-                    }))
-                  }
+                  onChange={updateManual("projectSupervisor", "project_supervisor")}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                 />
+                {serverErrors.project_supervisor ? <span role="alert" className="text-xs text-destructive">{serverErrors.project_supervisor}</span> : null}
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground">
@@ -199,14 +198,10 @@ const DailyReportPage = () => {
                   rows={2}
                   value={manualJob.siteAddress}
                   maxLength={1000}
-                  onChange={(event) =>
-                    setManualJob((current) => ({
-                      ...current,
-                      siteAddress: event.target.value,
-                    }))
-                  }
+                  onChange={updateManual("siteAddress", "site_address")}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                 />
+                {serverErrors.site_address ? <span role="alert" className="text-xs text-destructive">{serverErrors.site_address}</span> : null}
               </label>
             </div>
           </div>
@@ -219,15 +214,18 @@ const DailyReportPage = () => {
           onAddPhotos={progressPhotos.add}
           onRemovePhoto={progressPhotos.remove}
         />
+        {serverErrors.report_data ? <p role="alert" className="text-sm text-destructive">{serverErrors.report_data}</p> : null}
+        {serverErrors.progress_photos ? <p role="alert" className="text-sm text-destructive">{serverErrors.progress_photos}</p> : null}
 
         <Button
           type="submit"
           variant="primary"
           className="w-full"
-          disabled={generating}
+          loading={generating}
+          loadingLabel="Generating…"
         >
           <IoDocumentTextOutline size={16} />
-          {generating ? "Generating…" : "Generate and download PDF"}
+          Generate and download PDF
         </Button>
       </form>
     </Card>

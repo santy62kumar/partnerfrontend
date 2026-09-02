@@ -2,7 +2,9 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@components/ui/card';
 import { formatters } from '@utils/formatters';
-import { JOB_STATUS, JOB_STATUS_COLORS, JOB_STATUS_LABELS } from '@utils/constants';
+import { JOB_STATUS, JOB_STATUS_LABELS } from '@utils/constants';
+import { JOB_STATUS_TONE } from '@utils/status';
+import StatusBadge from '@components/common/StatusBadge';
 import { useAuthStore } from '@/store/authStore';
 import {
   IoLocationOutline,
@@ -64,20 +66,18 @@ const JobCard = ({ job }) => {
   return (
     <Card
       onClick={handleClick}
-      className="group overflow-hidden border-border/80 shadow-sm hover:shadow-md hover:border-primary/30 transition-all cursor-pointer bg-gradient-to-br from-card to-secondary/20 hover:-translate-y-1"
+      className="group cursor-pointer overflow-hidden border-border/80 bg-card shadow-none transition-colors hover:border-primary/40 hover:bg-muted/20"
     >
       <CardContent className="p-5 flex h-full flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">
+            <p className="mb-1 text-xs uppercase tracking-wider text-muted-foreground">
               Job #{job.id}
             </p>
             <h3 className="text-lg font-semibold font-heading text-foreground leading-tight mb-2 group-hover:text-primary transition-colors">
               {job.name}
             </h3>
-            <span className={JOB_STATUS_COLORS[job.status]}>
-              {statusLabel}
-            </span>
+            <StatusBadge tone={JOB_STATUS_TONE[job.status]}>{statusLabel}</StatusBadge>
           </div>
 
           <div className="text-right shrink-0">

@@ -25,7 +25,7 @@ const LoginPage = () => {
   const onSubmit = async ({ phoneNumber }) => {
     const result = await login(phoneNumber);
     if (!result.success) {
-      setError('phoneNumber', { message: result.error || 'Login failed' });
+      setError('phoneNumber', { message: result.fieldErrors?.phone_number || result.error });
     }
   };
 
@@ -59,6 +59,7 @@ const LoginPage = () => {
               size="lg"
               fullWidth
               loading={isSubmitting}
+              loadingLabel="Sending OTP…"
             >
               Send OTP
             </Button>

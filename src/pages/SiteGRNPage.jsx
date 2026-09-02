@@ -3,6 +3,8 @@ import { Package, CheckCircle2, AlertTriangle, Loader2, ClipboardCheck, ArrowLef
 import { grnApi } from '../api/grnApi';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 import { Button } from '@components/ui/button';
+import StatusBadge from '../components/common/StatusBadge';
+import { getApiErrorMessage } from '../api/apiErrors';
 
 const GRNDetail = ({ grn, showBack, onBack, onUpdated }) => {
   const [received, setReceived] = useState(() => {
@@ -42,7 +44,7 @@ const GRNDetail = ({ grn, showBack, onBack, onUpdated }) => {
       const updated = await grnApi.submit(grn.id, packages);
       onUpdated(updated);
     } catch (err) {
-      setSubmitError(err?.response?.data?.detail || 'Submission failed. Please try again.');
+      setSubmitError(getApiErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -55,9 +57,9 @@ const GRNDetail = ({ grn, showBack, onBack, onUpdated }) => {
       {/* Header */}
       <div className="flex items-center gap-3">
         {showBack && (
-          <button onClick={onBack} className="rounded-full p-2 hover:bg-muted transition-colors">
+          <Button variant="ghost" size="icon" onClick={onBack} aria-label="Back to all GRNs">
             <ArrowLeft className="h-5 w-5" />
-          </button>
+          </Button>
         )}
         <Package className="h-7 w-7 text-primary" />
         <div>
@@ -73,32 +75,35 @@ const GRNDetail = ({ grn, showBack, onBack, onUpdated }) => {
 
       {/* Status */}
       {submitted && (
-        <div className={`rounded-lg border p-4 flex items-start gap-3 ${grn.has_missing ? 'border-red-300 bg-red-50' : 'border-green-300 bg-green-50'}`}>
+        <Card className={grn.has_missing ? 'border-destructive/30 bg-destructive/10' : 'border-success/30 bg-success/10'}>
+          <CardContent className="flex items-start gap-3 p-4">
           {grn.has_missing
-            ? <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
-            : <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+            ? <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            : <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" />
           }
           <div>
-            <p className={`font-semibold ${grn.has_missing ? 'text-red-800' : 'text-green-800'}`}>
+            <p className={`font-semibold ${grn.has_missing ? 'text-destructive' : 'text-success'}`}>
               {grn.has_missing ? 'Submitted with missing packages' : 'All packages received'}
             </p>
             <p className="text-xs mt-0.5 text-muted-foreground">
               Submitted on {new Date(grn.submitted_at).toLocaleString()}
             </p>
           </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Missing alert dialog */}
       {showMissingAlert && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 space-y-3">
+        <Card className="border-warning/30 bg-warning/10">
+          <CardContent className="p-4 space-y-3">
           <div className="flex items-start gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-amber-800">
+              <p className="font-semibold text-warning">
                 {missingCount} package{missingCount !== 1 ? 's' : ''} not marked as received
               </p>
-              <p className="text-sm text-amber-700 mt-1">
+              <p className="text-sm text-warning-foreground mt-1">
                 Submitting now will flag this GRN and alert the supervisor. Continue?
               </p>
             </div>
@@ -111,7 +116,8 @@ const GRNDetail = ({ grn, showBack, onBack, onUpdated }) => {
               {submitting ? 'Submitting...' : 'Submit with missing'}
             </Button>
           </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Package list */}
@@ -125,29 +131,32 @@ const GRNDetail = ({ grn, showBack, onBack, onUpdated }) => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {grn.packages.map(pkg => {
+          {grn.packages.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">No packages are attached to this GRN.</p>
+          ) : grn.packages.map(pkg => {
             const isReceived = received[pkg.id] ?? false;
             return (
-              <button
+              <Button
+                variant="outline"
                 key={pkg.id}
                 onClick={() => toggle(pkg.id)}
                 disabled={submitted}
-                className={`w-full flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition-all ${
+                className={`h-auto w-full justify-start gap-3 px-4 py-3 text-left ${
                   isReceived
-                    ? 'border-green-300 bg-green-50 text-green-900'
-                    : 'border-border hover:border-primary/50 hover:bg-muted/40'
+                    ? 'border-success/30 bg-success/10 text-success hover:bg-success/15'
+                    : 'border-border hover:border-primary/50'
                 } ${submitted ? 'cursor-default opacity-90' : 'cursor-pointer'}`}
               >
                 <div className={`h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-colors ${
-                  isReceived ? 'bg-green-600 border-green-600' : 'border-muted-foreground'
+                  isReceived ? 'bg-success border-success' : 'border-muted-foreground'
                 }`}>
-                  {isReceived && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
+                  {isReceived && <CheckCircle2 className="h-3.5 w-3.5 text-success-foreground" />}
                 </div>
                 <span className="font-medium text-sm flex-1">{pkg.package_name}</span>
                 {!isReceived && !submitted && (
                   <span className="text-xs text-muted-foreground">Tap to mark received</span>
                 )}
-              </button>
+              </Button>
             );
           })}
         </CardContent>
@@ -155,7 +164,7 @@ const GRNDetail = ({ grn, showBack, onBack, onUpdated }) => {
 
       {/* Submit error */}
       {submitError && (
-        <p className="text-sm text-red-600 text-center">{submitError}</p>
+        <p role="alert" className="text-sm text-destructive text-center">{submitError}</p>
       )}
 
       {/* Submit button */}
@@ -192,7 +201,7 @@ const SiteGRNPage = () => {
       .then(data => {
         const list = Array.isArray(data) ? data : (data ? [data] : []);
         setGrns(list);
-        setError(list.length ? '' : 'No pending GRN assigned to you.');
+        setError('');
         if (list.length === 1) setSelectedId(list[0].id);
       })
       .catch(err => {
@@ -200,7 +209,7 @@ const SiteGRNPage = () => {
         if (status === 404) {
           setError('No pending GRN assigned to you.');
         } else {
-          setError('Failed to load GRN. Please try again.');
+          setError(getApiErrorMessage(err));
           setCanRetry(true);
         }
       })
@@ -221,7 +230,7 @@ const SiteGRNPage = () => {
     );
   }
 
-  if (error) {
+  if (error && grns.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-muted-foreground">
         <Package className="h-12 w-12 opacity-30" />
@@ -244,16 +253,20 @@ const SiteGRNPage = () => {
             <p className="text-sm text-muted-foreground">{grns.length} pending deliveries</p>
           </div>
         </div>
+        {error ? (
+          <Card className="border-warning/30 bg-warning/10"><CardContent role="alert" className="p-4 text-sm text-warning">Showing saved GRNs. {error}</CardContent></Card>
+        ) : null}
         <div className="space-y-3">
           {grns.map(g => (
-            <button
+            <Button
+              variant="outline"
               key={g.id}
               onClick={() => setSelectedId(g.id)}
-              className="w-full flex items-center gap-3 rounded-lg border border-border px-4 py-3 text-left hover:border-primary/50 hover:bg-muted/40 transition-all"
+              className="h-auto w-full justify-start gap-3 px-4 py-3 text-left hover:border-primary/50"
             >
               {g.status === 'submitted'
-                ? <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                : <Clock className="h-5 w-5 text-amber-500 shrink-0" />
+                ? <StatusBadge tone="success"><CheckCircle2 className="h-3 w-3" /> Submitted</StatusBadge>
+                : <StatusBadge tone="warning"><Clock className="h-3 w-3" /> Pending</StatusBadge>
               }
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm">
@@ -264,7 +277,7 @@ const SiteGRNPage = () => {
                 </p>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-            </button>
+            </Button>
           ))}
         </div>
       </div>

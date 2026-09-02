@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { IoClose } from 'react-icons/io5';
+import Button from './Button';
 
 const Modal = ({
   isOpen,
@@ -55,12 +56,16 @@ const Modal = ({
           <div className="modal-header">
             {title && <h2 className="modal-title">{title}</h2>}
             {showCloseButton && (
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={onClose}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Close dialog"
+                className="size-8 p-0 text-muted-foreground hover:text-foreground"
               >
                 <IoClose size={24} />
-              </button>
+              </Button>
             )}
           </div>
         )}

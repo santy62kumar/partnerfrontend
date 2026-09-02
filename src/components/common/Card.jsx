@@ -1,5 +1,9 @@
 import React from 'react';
+import { Card as UICard, CardContent, CardHeader, CardTitle } from '@components/ui/card';
+import { cn } from '@/lib/utils';
 
+// Same props the app already passes (title, headerRight, hoverable, padding),
+// rendered by the shadcn card so every surface shares one radius, border and shadow.
 const Card = ({
   children,
   title,
@@ -9,37 +13,38 @@ const Card = ({
   className = '',
   padding = 'p-6',
 }) => {
-  const hoverClass = hoverable ? 'ds-card-hoverable' : '';
-  const clickableClass = onClick ? 'cursor-pointer' : '';
+  const interactive = Boolean(onClick);
 
   return (
-    <div
-      className={`ds-card ${hoverClass} ${clickableClass} ${className}`}
+    <UICard
+      className={cn(
+        'gap-0 py-0 overflow-hidden',
+        hoverable && 'transition-shadow hover:shadow-md',
+        interactive && 'cursor-pointer',
+        className,
+      )}
       onClick={onClick}
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
       onKeyDown={
-        onClick
-          ? (e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onClick(e);
+        interactive
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onClick(event);
               }
             }
           : undefined
       }
     >
       {(title || headerRight) && (
-        <div className="ds-card-header">
-          {title && <h3 className="ds-card-title">{title}</h3>}
+        <CardHeader className="flex flex-row items-center justify-between gap-3 border-b px-6 py-4">
+          {title && <CardTitle className="text-base font-bold">{title}</CardTitle>}
           {headerRight && <div>{headerRight}</div>}
-        </div>
+        </CardHeader>
       )}
-
-      <div className={padding}>
-        {children}
-      </div>
-    </div>
+      <CardContent className={cn('px-0', padding)}>{children}</CardContent>
+    </UICard>
   );
 };
 

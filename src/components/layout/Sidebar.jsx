@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, CheckCircle2, X, FileText, Camera, ClipboardList, Package } from 'lucide-react';
+import { Home, CheckCircle2, X, FileText, Camera, ClipboardList, Package, CalendarDays } from 'lucide-react';
 import { useUIStore } from '@store/uiStore';
 import { Button } from '@components/ui/button';
 
@@ -27,6 +27,11 @@ const Sidebar = () => {
       name: 'Attendance',
       path: '/attendance',
       icon: Camera,
+    },
+    {
+      name: 'Roster',
+      path: '/roster',
+      icon: CalendarDays,
     },
     {
       name: 'Daily Report',
@@ -58,7 +63,7 @@ const Sidebar = () => {
           fixed top-0 left-0 h-full bg-card border-r border-border shadow-elevated z-50 
           transition-transform duration-300 w-64 flex flex-col
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          lg:translate-x-0 lg:sticky lg:top-[65px] lg:h-[calc(100vh-65px)] lg:shadow-none
+          lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:translate-x-0 lg:shadow-none
         `}
       >
         {/* Close button for mobile */}

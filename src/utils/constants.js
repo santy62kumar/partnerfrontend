@@ -24,13 +24,6 @@ export const JOB_STATUS_LABELS = {
 };
 
 // Job Status Colors (Tailwind classes)
-export const JOB_STATUS_COLORS = {
-  [JOB_STATUS.CREATED]: 'status-pill status-pill-created',
-  [JOB_STATUS.IN_PROGRESS]: 'status-pill status-pill-in-progress',
-  [JOB_STATUS.COMPLETED]: 'status-pill status-pill-completed',
-  [JOB_STATUS.PAUSED]: 'status-pill status-pill-paused',
-};
-
 // Verification Steps
 export const VERIFICATION_STEPS = {
   PAN: 'pan',

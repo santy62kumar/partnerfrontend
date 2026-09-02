@@ -49,7 +49,7 @@ const JobFilters = () => {
             >
               <Icon className="h-4 w-4" />
               <span>{filter.label}</span>
-              <span className="ml-1 rounded-full bg-secondary/80 px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground group-data-[state=active]:bg-primary-foreground/20 group-data-[state=active]:text-primary-foreground">
+              <span className="ml-1 rounded-full bg-secondary/80 px-2 py-0.5 text-xs font-semibold text-secondary-foreground group-data-[state=active]:bg-primary-foreground/20 group-data-[state=active]:text-primary-foreground">
                 {count}
               </span>
             </TabsTrigger>

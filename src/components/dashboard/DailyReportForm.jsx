@@ -10,6 +10,7 @@ import {
   MAX_PROGRESS_PHOTOS,
   MAX_REPORT_ROWS,
 } from '@utils/dailyReport';
+import Button from '@components/common/Button';
 
 const inputClass = 'w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground';
 
@@ -58,16 +59,16 @@ const DailyReportForm = ({
         </Field>
       ))}
       {reportData.accomplishments.length < MAX_REPORT_ROWS && (
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => setReportData((current) => ({
             ...current,
             accomplishments: addReportRow(current.accomplishments, ''),
           }))}
-          className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-primary"
         >
           + Add accomplishment
-        </button>
+        </Button>
       )}
     </ReportSection>
 
@@ -86,16 +87,16 @@ const DailyReportForm = ({
         </div>
       ))}
       {reportData.completed_work.length < MAX_REPORT_ROWS && (
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => setReportData((current) => ({
             ...current,
             completed_work: addReportRow(current.completed_work, emptyProgressRow()),
           }))}
-          className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-primary"
         >
           + Add completed work
-        </button>
+        </Button>
       )}
     </ReportSection>
 
@@ -119,13 +120,13 @@ const DailyReportForm = ({
         </div>
       ))}
       {visibleManpowerRows < MANPOWER_ROWS.length && (
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => setVisibleManpowerRows((current) => current + 1)}
-          className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-primary"
         >
           + Add manpower row
-        </button>
+        </Button>
       )}
       <Field label="Mandays">
         <input type="text" inputMode="decimal" placeholder="0" value={reportData.mandays} maxLength={LIMITS.short} onChange={(event) => setReportData((current) => ({ ...current, mandays: event.target.value }))} className={inputClass} />
@@ -147,16 +148,16 @@ const DailyReportForm = ({
         </div>
       ))}
       {reportData.upcoming_work.length < MAX_REPORT_ROWS && (
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => setReportData((current) => ({
             ...current,
             upcoming_work: addReportRow(current.upcoming_work, emptyUpcomingRow()),
           }))}
-          className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-primary"
         >
           + Add upcoming work
-        </button>
+        </Button>
       )}
     </ReportSection>
 
@@ -176,14 +177,16 @@ const DailyReportForm = ({
           {progressPhotos.map(({ file, preview }, index) => (
             <div key={`${file.name}-${index}`} className="relative overflow-hidden rounded-lg border border-border">
               <img src={preview} alt={`Progress ${index + 1}`} className="h-28 w-full object-cover" />
-              <button
+              <Button
                 type="button"
+                variant="danger"
+                size="sm"
                 aria-label={`Remove progress photo ${index + 1}`}
                 onClick={() => onRemovePhoto(index)}
-                className="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white"
+                className="absolute right-1 top-1 rounded-full px-2"
               >
                 <IoCloseCircleOutline size={20} />
-              </button>
+              </Button>
             </div>
           ))}
         </div>

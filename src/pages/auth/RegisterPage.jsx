@@ -15,13 +15,26 @@ const RegisterPage = () => {
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(registerSchema),
   });
 
   const onSubmit = async (formData) => {
-    await registerUser(formData);
+    const result = await registerUser(formData);
+    if (!result.success) {
+      const fields = {
+        phone_number: 'phoneNumber',
+        first_name: 'firstName',
+        last_name: 'lastName',
+        city: 'city',
+        pincode: 'pincode',
+      };
+      Object.entries(result.fieldErrors || {}).forEach(([field, message]) => {
+        if (fields[field]) setError(fields[field], { message });
+      });
+    }
   };
 
   return (
@@ -101,6 +114,7 @@ const RegisterPage = () => {
               size="lg"
               fullWidth
               loading={isSubmitting}
+              loadingLabel="Creating account…"
             >
               Register
             </Button>

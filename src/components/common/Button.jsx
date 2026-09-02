@@ -1,70 +1,48 @@
 import React from 'react';
+import { Loader2 } from 'lucide-react';
+import { Button as UIButton } from '@components/ui/button';
+
+// Kept as the app's older Button API (variant="primary", size="md", loading, fullWidth)
+// but rendered by the shadcn button, so both kits produce one visual language.
+const VARIANTS = {
+  primary: 'default',
+  secondary: 'secondary',
+  danger: 'destructive',
+  outline: 'outline',
+  ghost: 'ghost',
+};
+
+const SIZES = { sm: 'sm', md: 'default', lg: 'lg' };
 
 const Button = ({
   variant = 'primary',
   size = 'md',
   loading = false,
+  loadingLabel = 'Loading…',
   disabled = false,
   fullWidth = false,
   className = '',
   children,
   type = 'button',
-  onClick,
   ...props
-}) => {
-  const variants = {
-    primary: 'btn-primary',
-    secondary: 'btn-secondary',
-    danger: 'btn-danger',
-    outline: 'btn-outline',
-    ghost: 'btn-ghost',
-  };
-
-  const sizes = {
-    sm: 'btn-sm',
-    md: 'btn-md',
-    lg: 'btn-lg',
-  };
-
-  const widthClass = fullWidth ? 'w-full' : '';
-
-  return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled || loading}
-      className={`${variants[variant]} ${sizes[size]} ${widthClass} ${className}`}
-      {...props}
-    >
-      {loading ? (
-        <>
-          <svg
-            className="animate-spin h-5 w-5"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-          <span>Loading...</span>
-        </>
-      ) : (
-        children
-      )}
-    </button>
-  );
-};
+}) => (
+  <UIButton
+    type={type}
+    variant={VARIANTS[variant] || 'default'}
+    size={SIZES[size] || 'default'}
+    disabled={disabled || loading}
+    className={`${fullWidth ? 'w-full' : ''} ${className}`}
+    {...props}
+  >
+    {loading ? (
+      <>
+        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+        <span>{loadingLabel}</span>
+      </>
+    ) : (
+      children
+    )}
+  </UIButton>
+);
 
 export default Button;

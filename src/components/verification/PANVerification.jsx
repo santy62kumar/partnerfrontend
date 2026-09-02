@@ -9,6 +9,7 @@ import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { Label } from '@components/ui/label';
 import KYCConsentModal from './KYCConsentModal';
+import { getApiErrorMessage, getApiFieldErrors } from '@api/apiErrors';
 
 const PANVerification = ({ onSuccess, isPanVerified }) => {
   const toast = useToast();
@@ -36,11 +37,11 @@ const PANVerification = ({ onSuccess, isPanVerified }) => {
 
     setLoading(true);
     try {
-      await verificationApi.verifyPan(pan);
+      const status = await verificationApi.verifyPan(pan);
       toast.success('PAN verified successfully!');
-      onSuccess();
+      onSuccess(status);
     } catch (err) {
-      const message = err.message || 'PAN verification failed';
+      const message = getApiFieldErrors(err).pan || getApiErrorMessage(err);
       setError(message);
       toast.error(message);
     } finally {

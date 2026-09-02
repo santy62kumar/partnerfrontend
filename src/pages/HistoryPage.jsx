@@ -25,6 +25,8 @@ import { Input } from '@components/ui/input';
 import { Badge } from '@components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@components/ui/table';
 import { useToast } from '@hooks/useToast';
+import StatusBadge from '../components/common/StatusBadge';
+import { getApiErrorMessage } from '../api/apiErrors';
 
 const HistoryPage = () => {
   const navigate = useNavigate();
@@ -41,7 +43,7 @@ const HistoryPage = () => {
     try {
       await bomAPI.downloadRepairOrder(id, salesOrder);
     } catch (error) {
-      toast.error(error.message || 'Failed to download repair order');
+      toast.error(getApiErrorMessage(error));
     } finally {
       setDownloadingId(null);
     }
@@ -56,7 +58,7 @@ const HistoryPage = () => {
       await refetch();
       toast.success(successMessage);
     } catch (actionError) {
-      toast.error(actionError.message || 'Could not update requisite');
+      toast.error(getApiErrorMessage(actionError));
     } finally {
       setUpdatingId(null);
     }
@@ -175,14 +177,14 @@ const HistoryPage = () => {
             <p className="text-muted-foreground font-medium">Loading history...</p>
           </CardContent>
         </Card>
-      ) : error ? (
+      ) : error && history.length === 0 ? (
         <Card className="border-border/80 shadow-sm border-destructive/20 bg-destructive/5">
           <CardContent className="flex flex-col items-center justify-center p-12 text-center">
             <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
               <AlertCircle className="w-8 h-8 text-destructive" />
             </div>
             <p className="text-foreground font-medium mb-1">Could not load history</p>
-            <p className="text-sm text-muted-foreground mb-6">{error.message || 'Failed to fetch history'}</p>
+            <p className="text-sm text-destructive mb-6">{getApiErrorMessage(error)}</p>
             <Button onClick={() => refetch()} variant="outline">
               Try Again
             </Button>
@@ -212,6 +214,7 @@ const HistoryPage = () => {
         </Card>
       ) : (
         <>
+          {error ? <Card className="mb-4 border-warning/30 bg-warning/10"><CardContent role="alert" className="p-4 text-sm text-warning">Showing saved history. {getApiErrorMessage(error)}</CardContent></Card> : null}
           {/* Results Count */}
           <div className="mb-4 text-sm font-medium text-muted-foreground">
             Showing <span className="text-foreground">{filteredHistory.length}</span> of {history.length} requisite{history.length !== 1 ? 's' : ''}
@@ -263,15 +266,15 @@ const HistoryPage = () => {
                             )}
                           </div>
                           {item.status === 'completed' ? (
-                            <Badge variant="default" className="bg-success hover:bg-success/90 text-white gap-1 px-2.5 py-0.5">
+                            <StatusBadge tone="success">
                               <CheckCircle className="w-3 h-3" />
                               Completed
-                            </Badge>
+                            </StatusBadge>
                           ) : (
-                            <Badge variant="outline" className="border-warning text-warning-foreground bg-warning/10 gap-1 px-2.5 py-0.5">
+                            <StatusBadge tone="warning">
                               <Clock className="w-3 h-3 text-warning" />
                               Pending
-                            </Badge>
+                            </StatusBadge>
                           )}
                         </div>
 
@@ -375,7 +378,7 @@ const HistoryPage = () => {
                       <Table>
                         <TableHeader className="bg-muted/50">
                           <TableRow>
-                            <TableHead className="w-[50px]">#</TableHead>
+                            <TableHead className="w-12">#</TableHead>
                             <TableHead>Product Name</TableHead>
                             <TableHead>Quantity</TableHead>
                             <TableHead>Component Status</TableHead>

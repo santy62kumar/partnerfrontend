@@ -14,6 +14,7 @@ const OTPPage = () => {
   const { verifyOtp, resendOtp, phoneNumber: storedPhoneNumber } = useAuth();
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [resendLoading, setResendLoading] = useState(false);
+  const [resendError, setResendError] = useState('');
   const [timer, setTimer] = useState(60);
   const inputRefs = useRef([]);
 
@@ -79,7 +80,7 @@ const OTPPage = () => {
   const onSubmit = async ({ otp }) => {
     const result = await verifyOtp(otp);
     if (!result.success) {
-      setError('otp', { message: result.error });
+      setError('otp', { message: result.fieldErrors?.otp || result.error });
       setDigits(['', '', '', '', '', '']);
       setValue('otp', '');
       inputRefs.current[0]?.focus();
@@ -88,13 +89,18 @@ const OTPPage = () => {
 
   const handleResend = async () => {
     setResendLoading(true);
-    await resendOtp();
+    setResendError('');
+    const result = await resendOtp();
     setResendLoading(false);
-    setTimer(60);
-    setDigits(['', '', '', '', '', '']);
-    setValue('otp', '');
-    clearErrors('otp');
-    inputRefs.current[0]?.focus();
+    if (result.success) {
+      setTimer(60);
+      setDigits(['', '', '', '', '', '']);
+      setValue('otp', '');
+      clearErrors('otp');
+      inputRefs.current[0]?.focus();
+    } else {
+      setResendError(result.fieldErrors?.phone_number || result.error);
+    }
   };
 
   const otpComplete = digits.join('').length === 6;
@@ -119,6 +125,7 @@ const OTPPage = () => {
                     inputMode="numeric"
                     autoComplete={index === 0 ? 'one-time-code' : 'off'}
                     aria-label={`OTP digit ${index + 1} of 6`}
+                    aria-invalid={Boolean(errors.otp)}
                     value={digit}
                     onChange={(e) => handleDigitChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
@@ -144,6 +151,7 @@ const OTPPage = () => {
               size="lg"
               fullWidth
               loading={isSubmitting}
+              loadingLabel="Verifying…"
               disabled={!otpComplete}
             >
               Verify OTP
@@ -156,25 +164,27 @@ const OTPPage = () => {
                 Resend OTP in <span className="font-semibold">{timer}s</span>
               </p>
             ) : (
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleResend}
-                disabled={resendLoading}
-                className="text-sm text-primary font-medium hover:underline disabled:opacity-50"
+                loading={resendLoading}
+                loadingLabel="Sending…"
               >
-                {resendLoading ? 'Sending...' : 'Resend OTP'}
-              </button>
+                Resend OTP
+              </Button>
             )}
+            {resendError ? <p role="alert" className="mt-2 text-sm text-destructive">{resendError}</p> : null}
           </div>
 
           <div className="mt-4 text-center">
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => navigate('/login')}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               ← Back to Login
-            </button>
+            </Button>
           </div>
         </Card>
 

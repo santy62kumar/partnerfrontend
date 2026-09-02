@@ -8,6 +8,9 @@ import {
   PaperClipIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
+import { Button } from '@components/ui/button';
+import StatusBadge from '../common/StatusBadge';
+import { getApiErrorMessage } from '../../api/apiErrors';
 
 const ChecklistItem = ({ item }) => {
   const [isEditingComment, setIsEditingComment] = useState(false);
@@ -26,19 +29,19 @@ const ChecklistItem = ({ item }) => {
   const statusConfig = {
     pending: {
       label: 'Pending',
-      className: 'badge-primary',
+      tone: 'neutral',
     },
     checked: {
       label: 'Under Review',
-      className: 'badge-warning',
+      tone: 'warning',
     },
     is_approved: {
       label: 'Approved',
-      className: 'badge-success',
+      tone: 'success',
     },
     rejected: {
       label: 'Rejected',
-      className: 'badge-destructive',
+      tone: 'danger',
     },
   };
 
@@ -78,8 +81,8 @@ const ChecklistItem = ({ item }) => {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    } catch {
-      toast.error('Failed to upload document. Please try again.');
+    } catch (error) {
+      toast.error(getApiErrorMessage(error));
     } finally {
       setIsUploading(false);
     }
@@ -100,9 +103,11 @@ const ChecklistItem = ({ item }) => {
       <div className="flex items-start space-x-4">
         {/* Checkbox */}
         <div className="flex-shrink-0 mt-1">
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
             onClick={handleCheckboxChange}
-            className="focus:outline-none focus:ring-2 focus:ring-ring/50 rounded"
             aria-label={item.checked ? 'Uncheck item' : 'Check item'}
           >
             {item.checked ? (
@@ -110,7 +115,7 @@ const ChecklistItem = ({ item }) => {
             ) : (
               <CheckCircleIcon className="h-6 w-6 text-accent hover:text-muted-foreground" />
             )}
-          </button>
+          </Button>
         </div>
 
         {/* Main Content */}
@@ -121,9 +126,7 @@ const ChecklistItem = ({ item }) => {
               {item.text}
             </p>
 
-            <span className={`ml-2 ${currentStatus.className}`}>
-              {currentStatus.label}
-            </span>
+            <StatusBadge tone={currentStatus.tone} className="ml-2">{currentStatus.label}</StatusBadge>
           </div>
 
           <div className="flex items-center space-x-4 mb-3">
@@ -148,19 +151,12 @@ const ChecklistItem = ({ item }) => {
                 id={`file-${item.id}`}
                 disabled={isUploading}
               />
-              <label
-                htmlFor={`file-${item.id}`}
-                className={`flex items-center space-x-1 text-xs ${
-                  isUploading 
-                    ? 'text-muted-foreground cursor-not-allowed' 
-                    : 'text-muted-foreground hover:text-foreground cursor-pointer'
-                }`}
-              >
-                <PaperClipIcon className="h-4 w-4" />
-                <span>
-                  {isUploading ? 'Uploading...' : (item.document_link ? 'Replace' : 'Upload')}
-                </span>
-              </label>
+              <Button asChild variant="ghost" size="sm" disabled={isUploading}>
+                <label htmlFor={`file-${item.id}`} className="cursor-pointer">
+                  <PaperClipIcon className="h-4 w-4" />
+                  <span>{isUploading ? 'Uploading…' : (item.document_link ? 'Replace' : 'Upload')}</span>
+                </label>
+              </Button>
             </div>
           </div>
 
@@ -176,18 +172,21 @@ const ChecklistItem = ({ item }) => {
                   placeholder="Add a comment..."
                 />
                 <div className="flex space-x-2">
-                  <button
+                  <Button
+                    type="button"
+                    size="sm"
                     onClick={handleCommentSave}
-                    className="btn-primary btn-sm"
                   >
                     Save
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={handleCommentCancel}
-                    className="btn-secondary btn-sm"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -200,25 +199,28 @@ const ChecklistItem = ({ item }) => {
                     {item.comment}
                   </div>
                 ) : (
-                  <button
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
                     onClick={() => setIsEditingComment(true)}
-                    className="text-xs text-muted-foreground hover:text-foreground underline"
+                    className="px-0 text-muted-foreground"
                   >
                     Add comment
-                  </button>
+                  </Button>
                 )}
               </div>
             )}
           </div>
 
           {item.admin_comment && (
-            <div className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-red-700">
+            <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-destructive">
                 Admin Feedback
               </p>
-              <p className="mt-1 text-sm text-red-700">{item.admin_comment}</p>
+              <p className="mt-1 text-sm text-destructive">{item.admin_comment}</p>
               {item.review_status === 'rejected' && (
-                <p className="mt-2 text-xs text-red-600">
+                <p className="mt-2 text-xs text-destructive">
                   Fix the note or photo, then check this item again to send it back for review.
                 </p>
               )}

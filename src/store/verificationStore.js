@@ -22,6 +22,7 @@ export const useVerificationStore = create((set, get) => ({
     isVerified: status.is_verified || false,
     isPanVerified: status.is_pan_verified || false,
     isBankVerified: status.is_bank_details_verified || false,
+    isDocumentUploaded: status.is_id_verified || false,
   }),
 
   setPanVerified: (verified) => set({ isPanVerified: verified }),

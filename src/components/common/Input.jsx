@@ -68,7 +68,7 @@ const Input = forwardRef(
         </div>
 
         {error && (
-          <p id={errorId} className="mt-1 text-sm text-destructive">{error}</p>
+          <p id={errorId} className="mt-1 text-sm text-destructive" role="alert">{error}</p>
         )}
 
         {helperText && !error && (

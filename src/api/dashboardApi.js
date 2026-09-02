@@ -1,4 +1,6 @@
-import apiClient from './axiosConfig';
+import { generateDailyReport as generateDailyReportRequest } from './dailyReportGeneratedApi';
+import { getJobsPage } from './jobsGeneratedApi';
+import * as generated from './dashboardGeneratedApi';
 
 const extractJob = (payload) => payload?.job || payload?.data || payload || null;
 
@@ -9,10 +11,7 @@ export const dashboardApi = {
     const limit = 100;
     let result;
     for (let page = 0; page < 100; page += 1) {
-      const response = await apiClient.get('/dashboard/jobs', {
-        params: { skip: jobs.length, limit },
-      });
-      result = response.data;
+      result = await getJobsPage(jobs.length, limit);
       const nextJobs = result.jobs || [];
       jobs.push(...nextJobs);
       if (nextJobs.length < limit) {
@@ -25,67 +24,58 @@ export const dashboardApi = {
   // Get single job details + checklist metadata for detail page
   getJob: async (jobId) => {
     const [jobResponse, checklistsResponse] = await Promise.all([
-      apiClient.get(`/dashboard/jobs/${jobId}`),
-      apiClient.get(`/dashboard/jobs/${jobId}/checklists`).catch(() => ({ data: { checklists: [] } })),
+      generated.getJob(jobId),
+      generated.getJobChecklists(jobId).catch((error) => ({ checklists: [], _error: error })),
     ]);
 
-    const job = extractJob(jobResponse.data);
-    const checklists = checklistsResponse?.data?.checklists || [];
+    const job = extractJob(jobResponse);
+    const checklists = checklistsResponse?.checklists || [];
 
     return {
-      ...jobResponse.data,
+      ...jobResponse,
       job: {
         ...job,
         checklists,
       },
+      checklistsError: checklistsResponse?._error || null,
     };
   },
 
-  getJobHistory: async (jobId) => {
-    const response = await apiClient.get(`/dashboard/jobs/${jobId}/history`);
-    return response.data;
+  requestStartOtp: generated.requestStartOtp,
+
+  verifyStartOtp: (jobId, otp, notes) => generated.verifyStartOtp(jobId, { otp, notes }),
+
+  startJob: (jobId, notes) => generated.startJob(jobId, { notes }),
+
+  requestEndOtp: generated.requestEndOtp,
+
+  verifyEndOtp: (jobId, otp, notes, documents = {}) => generated.verifyEndOtp(jobId, { otp, notes, ...documents }),
+
+  finishJob: (jobId, notes, documents = {}) => generated.finishJob(jobId, { notes, ...documents }),
+
+  uploadCompletionDocument: generated.uploadCompletionDocument,
+
+  recordAttendance: async ({ jobId, rosterEntryId, latitude, longitude, manualLocation, photoFile, attendanceType, reportFile, sundayReason }) => {
+    return generated.recordAttendance({
+      job_id: jobId || null,
+      roster_entry_id: rosterEntryId || null,
+      latitude,
+      longitude,
+      manual_location: manualLocation?.trim() || '',
+      attendance_type: attendanceType || 'check_in',
+      photo: photoFile,
+      report_file: reportFile || null,
+      sunday_reason: sundayReason || null,
+    });
   },
 
-  addJobNote: async (jobId, notes) => {
-    const response = await apiClient.post(`/dashboard/jobs/${jobId}/notes`, { notes: notes.trim() });
-    return response.data;
-  },
+  getAttendance: generated.getAttendance,
 
-  recordAttendance: async ({ jobId, latitude, longitude, manualLocation, photoFile, attendanceType, reportFile, sundayReason }) => {
-    const formData = new FormData();
-    if (jobId) formData.append('job_id', String(jobId));
-    formData.append('latitude', String(latitude));
-    formData.append('longitude', String(longitude));
-    formData.append('manual_location', manualLocation?.trim() || '');
-    formData.append('attendance_type', attendanceType || 'check_in');
-    formData.append('photo', photoFile, photoFile?.name || `attendance-${Date.now()}.jpg`);
-    if (reportFile) formData.append('report_file', reportFile, reportFile.name);
-    // Only read when the day turns out to need superadmin approval.
-    if (sundayReason) formData.append('sunday_reason', sundayReason);
-    const response = await apiClient.post('/dashboard/attendance', formData);
-    return response.data;
-  },
-
-  getAttendance: async () => {
-    const response = await apiClient.get('/dashboard/attendance');
-    return response.data;
-  },
+  getJobChecklists: async (jobId) => (await generated.getJobChecklists(jobId))?.checklists || [],
 
   // Standalone report generation: returns the PDF, writes nothing.
   generateDailyReport: async ({ jobId, manualJob, reportDate, reportData, progressPhotos = [] }) => {
-    const formData = new FormData();
-    formData.append('report_date', reportDate);
-    formData.append('report_data', JSON.stringify(reportData));
-    if (jobId === 'manual') {
-      formData.append('project_name', manualJob.projectName.trim());
-      formData.append('sales_order', manualJob.salesOrder.trim());
-      formData.append('project_supervisor', manualJob.projectSupervisor.trim());
-      formData.append('site_address', manualJob.siteAddress.trim());
-    }
-    progressPhotos.forEach((file) => formData.append('progress_photos', file, file.name));
-    const response = await apiClient.post(`/dashboard/jobs/${jobId}/daily-report`, formData, {
-      responseType: 'blob',
-    });
+    const response = await generateDailyReportRequest({ jobId, manualJob, reportDate, reportData, progressPhotos });
     const disposition = String(response.headers?.['content-disposition'] || '');
     const filename = disposition.match(/filename="?([^";]+)/i)?.[1]
       || 'daily-installation-report.pdf';
@@ -97,42 +87,19 @@ export const dashboardApi = {
     setTimeout(() => globalThis.URL.revokeObjectURL(url), 10000);
   },
 
-  getSundayRequests: async () => {
-    const response = await apiClient.get('/dashboard/sunday-requests');
-    return response.data;
-  },
+  getSundayRequests: generated.getSundayRequests,
 
-  createSundayRequest: async ({ requestDate, reason }) => {
-    const response = await apiClient.post('/dashboard/sunday-requests', {
-      request_date: requestDate,
-      reason: reason?.trim() || null,
-    });
-    return response.data;
-  },
+  createSundayRequest: ({ requestDate, reason }) => generated.createSundayRequest(requestDate, reason),
 
-  getBilling: async (jobId) => {
-    const response = await apiClient.get(`/dashboard/jobs/${jobId}/billing`);
-    return response.data;
-  },
+  getBilling: generated.getBilling,
 
-  requestInvoice: async (jobId) => {
-    const response = await apiClient.post(`/dashboard/jobs/${jobId}/invoice-request`);
-    return response.data;
-  },
+  requestInvoice: generated.requestInvoice,
 
-  requestAdditionalInvoice: async (jobId, data = {}) => {
-    const response = await apiClient.post(`/dashboard/jobs/${jobId}/invoice-requests`, data);
-    return response.data;
-  },
+  requestAdditionalInvoice: generated.requestAdditionalInvoice,
 
   downloadInvoice: async (jobId, jobName, invoiceRequestId) => {
-    const path = invoiceRequestId
-      ? `/dashboard/jobs/${jobId}/invoice-requests/${invoiceRequestId}/download`
-      : `/dashboard/jobs/${jobId}/invoice-request/download`;
-    const response = await apiClient.get(path, {
-      responseType: 'blob',
-    });
-    const url = window.URL.createObjectURL(response.data);
+    const blob = await generated.downloadInvoice(jobId, invoiceRequestId);
+    const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute('download', `billing_invoice_${jobName || jobId}_${invoiceRequestId || 'latest'}.xlsx`);

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { Label } from '@components/ui/label';
+import { getApiErrorMessage, getApiFieldErrors } from '../api/apiErrors';
 
 const SiteRequisitePage = () => {
   const navigate = useNavigate();
@@ -17,6 +18,8 @@ const SiteRequisitePage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [detailsError, setDetailsError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [searched, setSearched] = useState(false);
 
   const { bomData, setBOMData, addToBucket, removeFromBucket, bucket, soDetails } = useRequisiteStore();
 
@@ -48,6 +51,7 @@ const SiteRequisitePage = () => {
     setLoading(true);
     setError('');
     setDetailsError('');
+    setFieldErrors({});
 
     try {
       const [data, details] = await Promise.allSettled([
@@ -63,12 +67,14 @@ const SiteRequisitePage = () => {
       setCabinetPosition(normalizedCabinetPosition);
       const resolvedDetails = details.status === 'fulfilled' ? details.value : null;
       setBOMData(data.value, normalizedSalesOrder, normalizedCabinetPosition, resolvedDetails);
+      setSearched(true);
 
       if (details.status === 'rejected') {
-        setDetailsError(details.reason?.message || details.reason?.data?.detail || 'Failed to fetch sales order details from Odoo.');
+        setDetailsError(getApiErrorMessage(details.reason));
       }
     } catch (err) {
-      setError(err?.message || err?.data?.detail || 'Failed to fetch BOM data');
+      setError(getApiErrorMessage(err));
+      setFieldErrors(getApiFieldErrors(err));
     } finally {
       setLoading(false);
     }
@@ -113,7 +119,7 @@ const SiteRequisitePage = () => {
             <ShoppingCart className="w-5 h-5 mr-2" />
             Review &amp; Continue
             {bucket.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-background">
+              <span className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-background">
                 {bucket.length}
               </span>
             )}
@@ -135,6 +141,7 @@ const SiteRequisitePage = () => {
                 onChange={(e) => setSalesOrder(e.target.value)}
                 required
               />
+              {fieldErrors.sales_order ? <p className="text-xs text-destructive">{fieldErrors.sales_order}</p> : null}
             </div>
             <div className="flex-1 w-full space-y-2">
               <div className="flex items-center justify-between gap-3">
@@ -157,6 +164,7 @@ const SiteRequisitePage = () => {
                 disabled={allCabinets}
                 required
               />
+              {fieldErrors.cabinet_position ? <p className="text-xs text-destructive">{fieldErrors.cabinet_position}</p> : null}
             </div>
             <Button
               type="submit"
@@ -175,13 +183,15 @@ const SiteRequisitePage = () => {
           )}
 
           {detailsError && (
-            <div className="mt-4 flex items-start gap-3 rounded-md border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <Card className="mt-4 border-warning/30 bg-warning/10">
+              <CardContent className="flex items-start gap-3 p-4 text-sm text-warning-foreground">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <div>
                 <p className="font-semibold">SO details not available yet</p>
                 <p className="mt-1">{detailsError} Fetch the SO details successfully before submitting the site requisite.</p>
               </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
         </CardContent>
       </Card>
@@ -278,6 +288,16 @@ const SiteRequisitePage = () => {
           )}
         </Card>
       )}
+
+      {searched && bomData.length === 0 && !loading && !error ? (
+        <Card>
+          <CardContent className="py-10 text-center">
+            <FolderOpen className="mx-auto h-10 w-10 text-muted-foreground" />
+            <p className="mt-3 font-semibold text-foreground">No materials found</p>
+            <p className="mt-1 text-sm text-muted-foreground">Try another cabinet position or choose all cabinets.</p>
+          </CardContent>
+        </Card>
+      ) : null}
 
     </div>
   );
