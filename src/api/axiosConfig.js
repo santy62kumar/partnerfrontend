@@ -5,6 +5,7 @@ import Cookies from 'js-cookie';
 
 const CSRF_COOKIE_NAMES = ['csrf_token', 'csrftoken', 'XSRF-TOKEN'];
 const MUTATING_METHODS = ['post', 'put', 'patch', 'delete'];
+let refreshPromise = null;
 
 const getCsrfToken = () => {
   for (const name of CSRF_COOKIE_NAMES) {
@@ -60,15 +61,9 @@ const apiClient = axios.create({
 // Request interceptor - Send cookies with every request
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth-token');
-
     if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
       delete config.headers['Content-Type'];
       delete config.headers['content-type'];
-    }
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
     }
 
     // Attach CSRF token to all state-changing requests
@@ -93,9 +88,12 @@ apiClient.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
+    const uncertainSave = MUTATING_METHODS.includes(originalRequest?.method?.toLowerCase());
     if (error.code === 'ECONNABORTED' || /timeout/i.test(error.message || '')) {
       return Promise.reject({
-        message: 'Request timed out. please try again in a moment.',
+        message: uncertainSave
+          ? 'We could not confirm whether this was saved. Check the record before submitting again.'
+          : 'This is taking longer than expected. Check your connection and try again.',
       });
     }
 
@@ -103,13 +101,23 @@ apiClient.interceptors.response.use(
       const { status, data } = error.response;
       const message = getErrorMessage(data);
 
-      if (status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/login') && !originalRequest.url.includes('/auth/refresh-token') && !originalRequest.url.includes('/auth/verify-otp')) {
+      if (status === 401 && originalRequest && !originalRequest._retry && !originalRequest.url?.includes('/auth/login') && !originalRequest.url?.includes('/auth/refresh-token') && !originalRequest.url?.includes('/auth/verify-otp')) {
         originalRequest._retry = true;
         try {
-          await axios.post(`${API_BASE_URL}/auth/refresh-token`, {}, { withCredentials: true });
+          refreshPromise ??= axios.post(`${API_BASE_URL}/auth/refresh-token`, {}, {
+            withCredentials: true, timeout: 30000,
+          }).finally(() => { refreshPromise = null; });
+          await refreshPromise;
           return apiClient(originalRequest);
-        } catch {
-          useAuthStore.getState().clearAuth();
+        } catch (refreshError) {
+          const refreshStatus = refreshError.response?.status;
+          if (refreshStatus === 401) useAuthStore.getState().clearAuth();
+          return Promise.reject({
+            status: refreshStatus,
+            message: refreshStatus === 401
+              ? 'Your session has ended. Please sign in again.'
+              : 'Could not reconnect. Check your connection and try again.',
+          });
         }
       } else if (status === 401) {
         useAuthStore.getState().clearAuth();
@@ -117,7 +125,9 @@ apiClient.interceptors.response.use(
 
       return Promise.reject({ status, message, data });
     } else if (error.request) {
-      return Promise.reject({ message: 'Network error. Please check your connection.' });
+      return Promise.reject({ message: uncertainSave
+        ? 'Connection lost. Check whether your changes were saved before submitting again.'
+        : 'Could not connect. Please check your internet connection and try again.' });
     } else {
       return Promise.reject({ message: error.message || 'An unexpected error occurred' });
     }

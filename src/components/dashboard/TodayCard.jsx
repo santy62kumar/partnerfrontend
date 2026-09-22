@@ -6,6 +6,7 @@ import { Button } from '@components/ui/button';
 import StatusBadge from '@components/common/StatusBadge';
 import { useRoster } from '@hooks/useQueryHooks';
 import { ROSTER_STATUS_LABEL, ROSTER_STATUS_TONE } from '@utils/status';
+import { collapseRosterVisits, pickVisit } from '@utils/attendanceFlow';
 
 const todayISO = () => {
   const d = new Date();
@@ -22,29 +23,28 @@ const STATE_COPY = {
   },
   scheduled: {
     headline: 'You are scheduled',
-    body: (entry) => `Check-in opens shortly before ${entry.slot_start}.`,
+    body: (entry) => `Check-in opens at ${entry.slot_start}.`,
     action: (entry) => ({ label: 'View job', to: `/dashboard/jobs/${entry.job_id}` }),
   },
   check_in_open: {
     headline: 'Check in now',
-    body: 'Take your site photo to start the slot.',
+    body: 'Take your site photo to start this visit.',
     action: (entry) => ({ label: 'Check in', to: `/attendance?entry=${entry.id}` }),
   },
   checked_in: {
     headline: 'You are on site',
-    body: 'Work through the checklist, then check out before the slot ends.',
+    body: 'Work through the checklist. When leaving, submit your report and check out together.',
     action: (entry) => ({ label: 'Open job', to: `/dashboard/jobs/${entry.job_id}` }),
     secondary: (entry) => ({ label: 'Check out', to: `/attendance?entry=${entry.id}` }),
   },
   report_due: {
-    headline: 'Submit your daily report',
-    body: 'The slot has ended. Generate the report, then check out.',
-    action: () => ({ label: 'Daily report', to: '/daily-report' }),
-    secondary: (entry) => ({ label: 'Check out', to: `/attendance?entry=${entry.id}` }),
+    headline: 'Finish your visit',
+    body: 'Your scheduled visit has ended. Submit the report as you check out.',
+    action: (entry) => ({ label: 'Report & check out', to: `/attendance?entry=${entry.id}` }),
   },
   completed: {
-    headline: 'Day complete',
-    body: 'Checked out and reported. Nothing else is due today.',
+    headline: 'Visit complete',
+    body: 'Your checkout and report are recorded for this job.',
     action: (entry) => ({ label: 'View job', to: `/dashboard/jobs/${entry.job_id}` }),
   },
   auto_closed: {
@@ -59,21 +59,13 @@ const STATE_COPY = {
   },
 };
 
-// What needs the partner's attention first, not what happens to be earliest in the day.
-const PRIORITY = ['check_in_open', 'report_due', 'checked_in', 'blocked', 'scheduled', 'missed', 'completed', 'auto_closed'];
-
-const pickEntry = (entries) =>
-  [...entries].sort(
-    (a, b) => PRIORITY.indexOf(a.status) - PRIORITY.indexOf(b.status) || a.slot_number - b.slot_number,
-  )[0];
-
 const resolve = (value, entry) => (typeof value === 'function' ? value(entry) : value);
 
 const TodayCard = () => {
   const today = todayISO();
-  const { data = { entries: [] }, isLoading, error } = useRoster(today);
-  const entries = data.entries || [];
-  const entry = entries.length ? pickEntry(entries) : null;
+  const { data = { entries: [] }, isLoading, error, refetch, isFetching } = useRoster(today);
+  const entries = collapseRosterVisits(data.entries || []);
+  const entry = pickVisit(entries);
 
   if (isLoading) {
     return (
@@ -87,8 +79,20 @@ const TodayCard = () => {
     );
   }
 
-  // A roster outage must not hide the rest of the dashboard — stay quiet instead.
-  if (error) return null;
+  const connectionNotice = error ? (
+    <div role="alert" className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        {entry ? 'Showing your saved schedule. Recent changes could not be loaded.' : 'Your schedule could not be loaded. Check your connection and try again.'}
+      </p>
+      <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
+        {isFetching ? 'Checking…' : 'Try again'}
+      </Button>
+    </div>
+  ) : null;
+
+  if (error && !entry) {
+    return <Card><CardContent className="p-5">{connectionNotice}</CardContent></Card>;
+  }
 
   if (!entry) {
     return (
@@ -111,6 +115,7 @@ const TodayCard = () => {
   return (
     <Card>
       <CardContent className="flex flex-col gap-4 p-5">
+        {connectionNotice}
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Today</p>
@@ -124,7 +129,7 @@ const TodayCard = () => {
         <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <Clock3 className="h-4 w-4 shrink-0" aria-hidden="true" />
-            Slot {entry.slot_number} · {entry.slot_start}–{entry.slot_end}
+            {entry.span_slots > 1 ? 'Full day' : `Slot ${entry.slot_number}`} · {entry.slot_start}–{entry.span_end}
           </span>
           <span className="inline-flex min-w-0 items-center gap-1.5">
             <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -150,7 +155,7 @@ const TodayCard = () => {
           )}
           {remaining > 0 && (
             <Link to="/roster" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
-              +{remaining} more slot{remaining === 1 ? '' : 's'} today
+              +{remaining} more visit{remaining === 1 ? '' : 's'} today
             </Link>
           )}
         </div>

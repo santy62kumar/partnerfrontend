@@ -63,7 +63,7 @@ const GRNDetail = ({ grn, showBack, onBack, onUpdated }) => {
         )}
         <Package className="h-7 w-7 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Site GRN</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Receive deliveries</h1>
           <p className="text-sm text-muted-foreground">
             {grn.source_document}
             {grn.odoo_picking_name && grn.odoo_picking_name !== grn.source_document && (
@@ -104,7 +104,7 @@ const GRNDetail = ({ grn, showBack, onBack, onUpdated }) => {
                 {missingCount} package{missingCount !== 1 ? 's' : ''} not marked as received
               </p>
               <p className="text-sm text-warning-foreground mt-1">
-                Submitting now will flag this GRN and alert the supervisor. Continue?
+                Your supervisor will be told which packages are missing. Confirm this delivery?
               </p>
             </div>
           </div>
@@ -178,7 +178,7 @@ const GRNDetail = ({ grn, showBack, onBack, onUpdated }) => {
           {submitting ? (
             <><Loader2 className="h-4 w-4 animate-spin" /> Submitting...</>
           ) : (
-            <><ClipboardCheck className="h-4 w-4" /> Submit GRN</>
+            <><ClipboardCheck className="h-4 w-4" /> Confirm delivery</>
           )}
         </Button>
       )}
@@ -249,7 +249,7 @@ const SiteGRNPage = () => {
         <div className="flex items-center gap-3">
           <Package className="h-7 w-7 text-primary" />
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Site GRN</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Receive deliveries</h1>
             <p className="text-sm text-muted-foreground">{grns.length} pending deliveries</p>
           </div>
         </div>

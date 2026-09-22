@@ -8,7 +8,7 @@ const AttendancePage = () => {
 
   return (
     <div className="animate-fadeIn space-y-6 max-w-6xl mx-auto">
-      <DailyAttendance initialRosterEntryId={params.get('entry') || ''} />
+      <DailyAttendance key={params.toString()} initialRosterEntryId={params.get('entry') || ''} initialJobId={params.get('job') || ''} />
     </div>
   );
 };

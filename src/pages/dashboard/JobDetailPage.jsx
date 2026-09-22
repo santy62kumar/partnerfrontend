@@ -82,6 +82,7 @@ const JobDetailPage = () => {
   const checklists = Array.isArray(job.checklists) ? job.checklists : [];
   const canStart = job.status === 'created' || job.status === 'paused';
   const canFinish = job.status === 'in_progress';
+  const startReady = !job._partialError && checklists.length > 0;
   const needsOtp = Boolean(job.customer_phone);
   const requiredCompletionDocuments = closureDocuments(job.type);
   const allCompletionDocumentsAttached = requiredCompletionDocuments.every((slot) =>
@@ -186,14 +187,23 @@ const JobDetailPage = () => {
       {job._partialError ? (
         <Card className="border-warning/30 bg-warning/10" padding="p-4">
           <p role="alert" className="text-sm text-warning">Job details loaded, but checklists are unavailable. {getApiErrorMessage(job._partialError)}</p>
+          <Button variant="outline" onClick={() => refetchJob()}>Try again</Button>
         </Card>
       ) : null}
 
       <div className={`grid grid-cols-1 gap-6 items-start ${isExternalIP ? 'xl:grid-cols-[1.25fr_1fr]' : ''}`}>
         <div className="space-y-6">
+          {canFinish && (
+            <Card title="Your next step">
+              <p className="mb-4 text-sm text-muted-foreground">At the site? Check in, work through your checklists below, then add your report and check out when leaving.</p>
+              <Button onClick={() => navigate(`/attendance?job=${job.id}`)}>Open today’s visit</Button>
+              <a href="#job-checklists" className="ml-4 inline-block py-3 text-sm font-semibold text-primary underline">Open checklists</a>
+            </Card>
+          )}
           {canStart && (
             <Card title={job.status === 'paused' ? 'Resume this job' : 'Start this job'}>
               <div className="space-y-3">
+                {!startReady && <p className="text-sm text-warning">{job._partialError ? 'Checklists could not be loaded. Try again before starting.' : 'Your supervisor needs to attach a checklist before you can start this job.'}</p>}
                 <p className="text-sm text-muted-foreground">
                   {needsOtp
                     ? 'Send the customer a one-time code and enter it here to go on site.'
@@ -206,21 +216,24 @@ const JobDetailPage = () => {
                         value={otp}
                         onChange={(event) => setOtp(event.target.value.replace(/\D/g, ''))}
                         inputMode="numeric"
-                        placeholder="Customer OTP"
+                        placeholder="6-digit customer code"
+                        aria-label="Customer start code"
+                        maxLength={6}
+                        autoComplete="one-time-code"
                         className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground sm:max-w-[12rem]"
                         aria-invalid={Boolean(startFieldErrors.otp)}
                       />
-                      <Button type="button" variant="secondary" onClick={handleSendOtp} disabled={otpSending}>
+                      <Button type="button" variant="secondary" onClick={handleSendOtp} disabled={otpSending || !startReady}>
                         {otpSending ? 'Sending…' : otpSent ? 'Resend OTP' : 'Send OTP'}
                       </Button>
-                      <Button type="button" onClick={handleStart} disabled={starting || otp.trim().length === 0}>
+                      <Button type="button" onClick={handleStart} disabled={starting || !startReady || otp.trim().length !== 6}>
                         {starting ? 'Starting…' : job.status === 'paused' ? 'Resume job' : 'Start job'}
                       </Button>
                     </div>
                     {startFieldErrors.otp ? <p className="text-xs text-destructive">{startFieldErrors.otp}</p> : null}
                   </>
                 ) : (
-                  <Button type="button" onClick={handleStart} disabled={starting}>
+                  <Button type="button" onClick={handleStart} disabled={starting || !startReady}>
                     {starting ? 'Starting…' : job.status === 'paused' ? 'Resume job' : 'Start job'}
                   </Button>
                 )}
@@ -228,8 +241,51 @@ const JobDetailPage = () => {
             </Card>
           )}
 
+
+          <JobDetails job={job} />
+
+          <section id="job-checklists">
+          <Card
+            title="Checklists"
+            headerRight={(
+              <span className="text-xs text-muted-foreground">
+                {checklists.length} linked
+              </span>
+            )}
+          >
+            {checklists.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {checklists.map((checklist) => (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    key={checklist.id}
+                    type="button"
+                    onClick={() => {
+                      navigate(`/dashboard/jobs/${job.id}/checklist/${checklist.id}`);
+                    }}
+                    className="justify-between"
+                  >
+                    <span className="truncate">{checklist.name}</span>
+                    <span className="dashboard-filter-count">
+                      Open
+                    </span>
+                  </Button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {job._partialError ? 'Checklists could not be loaded. Try again above.' : 'No checklists are attached yet. Ask your supervisor to add them.'}
+              </p>
+            )}
+          </Card>
+          </section>
+
           {canFinish && (
-            <Card title="Complete this job">
+            <details className="rounded-xl border border-border bg-card p-4">
+              <summary className="cursor-pointer font-semibold text-foreground">Finish the whole job</summary>
+              <Card title="Final job completion" className="mt-4">
+                <p className="mb-4 text-sm text-muted-foreground">Use this only when all work is finished. Your supervisor must approve every checklist item, and all completion documents must be attached. For the end of a daily visit, use check out above.</p>
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
                   {needsOtp
@@ -286,6 +342,7 @@ const JobDetailPage = () => {
                     })}
                   </ul>
                 </div>
+                {!allCompletionDocumentsAttached && <p className="text-sm text-muted-foreground">Attach the documents above before requesting the customer code.</p>}
                 {needsOtp ? (
                   <>
                     <div className="flex flex-col gap-3 sm:flex-row">
@@ -293,14 +350,17 @@ const JobDetailPage = () => {
                         value={endOtp}
                         onChange={(event) => setEndOtp(event.target.value.replace(/\D/g, ''))}
                         inputMode="numeric"
-                        placeholder="Customer OTP"
+                        placeholder="6-digit customer code"
+                        aria-label="Customer completion code"
+                        maxLength={6}
+                        autoComplete="one-time-code"
                         className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground sm:max-w-[12rem]"
                         aria-invalid={Boolean(finishFieldErrors.otp)}
                       />
-                      <Button type="button" variant="secondary" onClick={handleSendEndOtp} disabled={endOtpSending}>
+                      <Button type="button" variant="secondary" onClick={handleSendEndOtp} disabled={endOtpSending || !allCompletionDocumentsAttached || Boolean(uploadingDocument)}>
                         {endOtpSending ? 'Sending…' : endOtpSent ? 'Resend OTP' : 'Send OTP'}
                       </Button>
-                      <Button type="button" onClick={handleFinish} disabled={finishing || !allCompletionDocumentsAttached || endOtp.trim().length === 0}>
+                      <Button type="button" onClick={handleFinish} disabled={finishing || !allCompletionDocumentsAttached || endOtp.trim().length !== 6}>
                         {finishing ? 'Completing…' : 'Complete job'}
                       </Button>
                     </div>
@@ -312,45 +372,10 @@ const JobDetailPage = () => {
                   </Button>
                 )}
               </div>
-            </Card>
+              </Card>
+            </details>
           )}
 
-          <JobDetails job={job} />
-
-          <Card
-            title="Checklists"
-            headerRight={(
-              <span className="text-xs text-muted-foreground">
-                {checklists.length} linked
-              </span>
-            )}
-          >
-            {checklists.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {checklists.map((checklist) => (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    key={checklist.id}
-                    type="button"
-                    onClick={() => {
-                      navigate(`/dashboard/jobs/${job.id}/checklist/${checklist.id}`);
-                    }}
-                    className="justify-between"
-                  >
-                    <span className="truncate">{checklist.name}</span>
-                    <span className="dashboard-filter-count">
-                      Open
-                    </span>
-                  </Button>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No checklists are attached to this job yet.
-              </p>
-            )}
-          </Card>
         </div>
 
         {isExternalIP && (

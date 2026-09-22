@@ -2,7 +2,7 @@ import React from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import { VERIFICATION_STEPS } from '@utils/constants';
 
-const VerificationStepper = ({ currentStep, isPanVerified, isBankVerified }) => {
+const VerificationStepper = ({ currentStep, isPanVerified, isBankVerified, isIdVerified, isDocumentUploaded }) => {
   const steps = [
     {
       id: VERIFICATION_STEPS.PAN,
@@ -16,8 +16,8 @@ const VerificationStepper = ({ currentStep, isPanVerified, isBankVerified }) => 
     },
     {
       id: VERIFICATION_STEPS.DOCUMENT,
-      name: 'Documents',
-      description: 'Upload documents (Optional)',
+      name: 'Identity document',
+      description: isIdVerified ? 'Approved' : isDocumentUploaded ? 'Waiting for approval' : 'Send for approval',
     },
   ];
 
@@ -28,7 +28,7 @@ const VerificationStepper = ({ currentStep, isPanVerified, isBankVerified }) => 
     if (stepId === VERIFICATION_STEPS.BANK) {
       return isBankVerified ? 'completed' : currentStep === stepId ? 'current' : 'upcoming';
     }
-    return currentStep === stepId ? 'current' : 'upcoming';
+    return isIdVerified ? 'completed' : currentStep === stepId ? 'current' : 'upcoming';
   };
 
   return (

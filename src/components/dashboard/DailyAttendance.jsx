@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import React, { useEffect, useRef, useState } from 'react';
 import Card from '@components/common/Card';
 import Button from '@components/common/Button';
@@ -8,7 +9,11 @@ import { formatters } from '@utils/formatters';
 import { captureVideoFrame, compressImageFile } from '@utils/image';
 import { IoLocationOutline, IoTimeOutline, IoCallOutline, IoCameraOutline, IoCloseCircleOutline, IoCameraReverseOutline } from 'react-icons/io5';
 import Modal from '@components/common/Modal';
-import { checkOutReportLabel } from '@utils/jobDocuments';
+import { collapseRosterVisits, pickVisit, visitAttendanceType, visitCanRecord } from '@utils/attendanceFlow';
+import DailyReportForm from './DailyReportForm';
+import { useProgressPhotos } from '@hooks/useProgressPhotos';
+import { emptyReport, hasAccomplishment, normalizeReport } from '@utils/dailyReport';
+import { checkOutReportLabel, filesDailyInstallationReport } from '@utils/jobDocuments';
 import StatusBadge from '../common/StatusBadge';
 import { getApiErrorMessage, getApiFieldErrors } from '../../api/apiErrors';
 
@@ -29,35 +34,19 @@ const todayISO = () => {
 const MAX_ATTENDANCE_PHOTO_BYTES = 5 * 1024 * 1024;
 const MAX_REPORT_FILE_BYTES = 10 * 1024 * 1024;
 
-// One IP on one job for one day is a single visit however many slots it spans:
-// attendance is marked once, in the first half, and runs to the last slot's end.
-const collapseRosterVisits = (entries) => {
-  const byJob = new Map();
-  entries.forEach((entry) => {
-    const current = byJob.get(entry.job_id);
-    if (!current || entry.slot_number < current.slot_number) byJob.set(entry.job_id, entry);
-  });
-  return [...byJob.values()].map((entry) => {
-    const slots = entries.filter((item) => item.job_id === entry.job_id);
-    return {
-      ...entry,
-      span_end: slots.reduce((latest, item) => (item.slot_end > latest ? item.slot_end : latest), entry.slot_end),
-      span_slots: slots.length,
-    };
-  });
-};
-
-const DailyAttendance = ({ initialRosterEntryId = '' }) => {
+const DailyAttendance = ({ initialRosterEntryId = '', initialJobId = '' }) => {
   const toast = useToast();
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [locating, setLocating] = useState(false);
   const [openingCamera, setOpeningCamera] = useState(false);
-  const [manualLocation, setManualLocation] = useState('');
-  const [attendanceType, setAttendanceType] = useState('check_in');
-  const [jobId, setJobId] = useState('');
-  const [rosterEntryId, setRosterEntryId] = useState(initialRosterEntryId);
+  const [locationDraft, setManualLocation] = useState(null);
+  const [generalAttendanceType, setAttendanceType] = useState('check_in');
+  const [selectedVisitId, setSelectedVisitId] = useState(null);
+  const [reportMode, setReportMode] = useState('form');
+  const [reportData, setReportData] = useState(emptyReport);
+  const progressPhotos = useProgressPhotos();
   const [reportFile, setReportFile] = useState(null);
   const [facingMode, setFacingMode] = useState('environment');
   const [sundayBlocked, setSundayBlocked] = useState(false);
@@ -81,7 +70,16 @@ const DailyAttendance = ({ initialRosterEntryId = '' }) => {
   const todayRoster = roster.entries || [];
   const { mutateAsync: record, isPending } = useRecordAttendance();
   const rosterVisits = collapseRosterVisits(todayRoster);
-  const selectedEntry = todayRoster.find((entry) => String(entry.id) === String(rosterEntryId));
+  const suggestedEntry = pickVisit(rosterVisits, initialRosterEntryId, initialJobId);
+  const rosterEntryId = selectedVisitId ?? String(suggestedEntry?.id || '');
+  const selectedEntry = rosterVisits.find((entry) => String(entry.id) === rosterEntryId);
+  const jobId = selectedEntry ? String(selectedEntry.job_id) : '';
+  const attendanceType = selectedEntry ? visitAttendanceType(selectedEntry) : generalAttendanceType;
+  const manualLocation = locationDraft ?? (selectedEntry?.job?.service_location || selectedEntry?.job?.customer_city || selectedEntry?.job?.name || '');
+  const requestedVisitMissing = !selectedEntry && Boolean(rosterEntryId || (selectedVisitId === null && (initialRosterEntryId || initialJobId)));
+  const visitBlocked = (selectedEntry && !visitCanRecord(selectedEntry)) || requestedVisitMissing;
+  const busy = isPending || locating;
+  const inlineReport = attendanceType === 'check_out' && selectedEntry && filesDailyInstallationReport(selectedEntry.job?.type) && reportMode === 'form';
   const selectedJobType = selectedEntry?.job?.type;
   const reportLabel = checkOutReportLabel(selectedJobType);
 
@@ -133,6 +131,7 @@ const DailyAttendance = ({ initialRosterEntryId = '' }) => {
       return;
     }
 
+    setSelectedVisitId(rosterEntryId);
     setOpeningCamera(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -205,6 +204,8 @@ const DailyAttendance = ({ initialRosterEntryId = '' }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (busy || visitBlocked || rosterLoading || rosterError) return;
+    setSelectedVisitId(rosterEntryId);
     setFormError('');
     setFieldErrors({});
     if (!photoFile) {
@@ -215,7 +216,11 @@ const DailyAttendance = ({ initialRosterEntryId = '' }) => {
       setFieldErrors({ manual_location: 'Site location is required for attendance' });
       return;
     }
-    if (attendanceType === 'check_out' && !reportFile) {
+    if (inlineReport && !hasAccomplishment(reportData)) {
+      setFieldErrors({ report_data: 'Tell us what you completed today' });
+      return;
+    }
+    if (attendanceType === 'check_out' && !inlineReport && !reportFile) {
       setFieldErrors({ report_file: `Upload the completed ${reportLabel}` });
       return;
     }
@@ -248,7 +253,9 @@ const DailyAttendance = ({ initialRosterEntryId = '' }) => {
         manualLocation,
         photoFile,
         attendanceType,
-        reportFile: attendanceType === 'check_out' ? reportFile : null,
+        reportFile: attendanceType === 'check_out' && !inlineReport ? reportFile : null,
+        reportData: inlineReport ? normalizeReport(reportData) : undefined,
+        progressPhotos: inlineReport ? progressPhotos.files : [],
         sundayReason: sundayReason.trim() || undefined,
       });
 
@@ -256,8 +263,10 @@ const DailyAttendance = ({ initialRosterEntryId = '' }) => {
         if (photoPreview) URL.revokeObjectURL(photoPreview);
         setPhotoFile(null);
         setPhotoPreview(null);
-        setManualLocation('');
+        setManualLocation(null);
         setReportFile(null);
+        setReportData(emptyReport());
+        progressPhotos.reset();
       };
 
       // Sunday: the attempt was filed for approval instead of recorded. The GPS fix
@@ -316,7 +325,7 @@ const DailyAttendance = ({ initialRosterEntryId = '' }) => {
   const selectedSundayRequest = sundayRequests.find((request) => request.request_date === requestDate);
 
   return (
-    <Card title="Daily Attendance">
+    <Card title="Check in / Check out">
       {formError && <Card className="mb-4 border-destructive/30 bg-destructive/10" padding="p-3"><p role="alert" className="text-sm text-destructive">{formError}</p></Card>}
       {sundayError && <Card className="mb-4 border-warning/30 bg-warning/10" padding="p-3"><p role="alert" className="text-sm text-warning">Sunday requests unavailable. {sundayError}</p></Card>}
       {sundayBlocked && (
@@ -341,38 +350,15 @@ const DailyAttendance = ({ initialRosterEntryId = '' }) => {
                 rows={2}
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
               />
-              <Button type="button" disabled={sundaySubmitting} onClick={submitSundayRequest}>
+              <Button type="button" disabled={sundaySubmitting} onClick={() => submitSundayRequest()}>
                 {sundaySubmitting ? 'Sending…' : 'Request Sunday work'}
               </Button>
             </>
           )}
         </div>
       )}
-      <div className="mb-4">
-        <Button
-          variant="outline"
-          type="button"
-          onClick={() => {
-            setRequestDate(nextSundayISO());
-            fetchSundayRequests();
-            setSundayModalVisible(true);
-          }}
-          className="w-full justify-between"
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-foreground">Manage Sunday Work Requests</span>
-          </div>
-        </Button>
-      </div>
-      <form onSubmit={handleSubmit} className="space-y-4 mb-6">
-        <div className="grid grid-cols-2 gap-2">
-          <Button type="button" variant={attendanceType === 'check_in' ? 'primary' : 'secondary'} onClick={() => setAttendanceType('check_in')}>
-            Check In
-          </Button>
-          <Button type="button" variant={attendanceType === 'check_out' ? 'primary' : 'secondary'} onClick={() => setAttendanceType('check_out')}>
-            Check Out
-          </Button>
-        </div>
+      <form onSubmit={handleSubmit} className="space-y-4 mb-6" onChangeCapture={() => setSelectedVisitId(rosterEntryId)}>
+        <fieldset disabled={busy} className="space-y-4 min-w-0">
         <div>
           <label htmlFor="attendance-job" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
             Today&apos;s assignment
@@ -381,16 +367,22 @@ const DailyAttendance = ({ initialRosterEntryId = '' }) => {
             id="attendance-job"
             value={rosterEntryId}
             onChange={(event) => {
-              const entry = todayRoster.find((item) => String(item.id) === event.target.value);
-              setRosterEntryId(event.target.value);
-              setJobId(entry ? String(entry.job_id) : '');
+              setSelectedVisitId(event.target.value);
+              setManualLocation(null);
+              handleRemovePhoto();
+              handleCloseCamera();
+              setReportFile(null);
+              setReportData(emptyReport());
+              progressPhotos.reset();
+              setFormError('');
+              setFieldErrors({});
             }}
             disabled={rosterLoading || (Boolean(rosterError) && todayRoster.length === 0)}
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
           >
             <option value="">No job / General attendance</option>
             {rosterVisits.map((entry) => (
-              <option key={entry.id} value={entry.id} disabled={entry.job.status !== 'in_progress'}>
+              <option key={entry.id} value={entry.id}>
                 {entry.span_slots > 1 ? 'Full day' : `Slot ${entry.slot_number}`} · {entry.slot_start}–{entry.span_end} · {entry.job.name} · {entry.status.replaceAll('_', ' ')}
               </option>
             ))}
@@ -400,6 +392,32 @@ const DailyAttendance = ({ initialRosterEntryId = '' }) => {
             <div className="mt-2 space-y-2"><p role="alert" className="text-xs text-warning">{getApiErrorMessage(rosterError)}</p><Button type="button" variant="secondary" size="sm" onClick={() => refetchRoster()}>Retry roster</Button></div>
           )}
         </div>
+        {!selectedEntry && !requestedVisitMissing && (
+        <div className="grid grid-cols-2 gap-2">
+          <Button type="button" variant={attendanceType === 'check_in' ? 'primary' : 'secondary'} onClick={() => setAttendanceType('check_in')}>
+            Check In
+          </Button>
+          <Button type="button" variant={attendanceType === 'check_out' ? 'primary' : 'secondary'} onClick={() => setAttendanceType('check_out')}>
+            Check Out
+          </Button>
+        </div>
+        )}
+        {!rosterLoading && visitBlocked ? (
+          <div role="status" className="rounded-lg border border-border bg-muted/30 p-4 text-sm space-y-2">
+            <p>{requestedVisitMissing ? 'This job is not on your schedule for today. Choose another assignment above or contact your supervisor.'
+              : selectedEntry.status === 'blocked' ? 'Start this job before checking in.'
+              : selectedEntry.status === 'scheduled' ? `Check-in opens at ${selectedEntry.slot_start}.`
+              : ['completed', 'auto_closed'].includes(selectedEntry.status) ? 'This visit is already closed. Your records are below.'
+              : 'Check-in is no longer available for this visit. Contact your supervisor.'}</p>
+            {selectedEntry && <Link className="inline-block font-semibold text-primary underline" to={`/dashboard/jobs/${jobId}`}>Open this job</Link>}
+            <Button type="button" variant="outline" size="sm" onClick={() => refetchRoster()}>Refresh schedule</Button>
+          </div>
+        ) : selectedEntry ? (
+          <p className="text-sm text-muted-foreground">{attendanceType === 'check_out'
+            ? 'Ready to leave? Add your site photo and report, then check out. This finishes your visit, not the whole job.'
+            : 'At the site? Take a photo and check in. Your job and location are already filled in.'}</p>
+        ) : null}
+        <fieldset disabled={Boolean(visitBlocked) || rosterLoading || Boolean(rosterError)} className="space-y-4 min-w-0">
         <div>
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
             Attendance Photo <span className="text-destructive">*</span>
@@ -427,7 +445,7 @@ const DailyAttendance = ({ initialRosterEntryId = '' }) => {
             <Button
               type="button"
               variant="outline"
-              onClick={openCamera}
+              onClick={() => openCamera()}
               disabled={openingCamera}
               className="h-36 w-full flex-col rounded-lg border-2 border-dashed bg-background hover:bg-surface"
             >
@@ -464,26 +482,37 @@ const DailyAttendance = ({ initialRosterEntryId = '' }) => {
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
               {reportLabel} <span className="text-destructive">*</span>
             </p>
-            <p className="text-xs text-muted-foreground">
-              Upload the completed report: PDF, JPG, PNG, DOC or DOCX · maximum 10 MB.
-            </p>
-            <input
-              aria-label={`Upload completed ${reportLabel}`}
-              type="file"
-              accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-              onChange={handleReportFile}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-              required
-            />
-            {fieldErrors.report_file ? <p className="text-xs text-destructive">{fieldErrors.report_file}</p> : null}
+            {selectedEntry && filesDailyInstallationReport(selectedJobType) && (
+              <label className="block text-sm font-medium">
+                How would you like to add your report?
+                <select value={reportMode} onChange={(event) => setReportMode(event.target.value)} className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2">
+                  <option value="form">Fill it in here</option>
+                  <option value="upload">Upload a report I already have</option>
+                </select>
+              </label>
+            )}
+            {inlineReport ? (
+              <>
+                <p className="text-sm text-muted-foreground">We create and submit the report when you check out. No download or re-upload needed.</p>
+                <DailyReportForm reportData={reportData} setReportData={setReportData} progressPhotos={progressPhotos.photos} onAddPhotos={progressPhotos.add} onRemovePhoto={progressPhotos.remove} />
+                {fieldErrors.report_data && <p role="alert" className="text-xs text-destructive">{fieldErrors.report_data}</p>}
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground">Upload the completed report: PDF, JPG, PNG, DOC or DOCX · maximum 10 MB.</p>
+                <input aria-label={`Upload completed ${reportLabel}`} type="file" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" onChange={handleReportFile} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm" required />
+                {fieldErrors.report_file && <p role="alert" className="text-xs text-destructive">{fieldErrors.report_file}</p>}
+              </>
+            )}
           </div>
         )}
 
         <div>
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
+          <label htmlFor="attendance-location" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
             Site Location <span className="text-destructive">*</span>
           </label>
           <input
+            id="attendance-location"
             type="text"
             value={manualLocation}
             onChange={(e) => setManualLocation(e.target.value)}
@@ -502,9 +531,28 @@ const DailyAttendance = ({ initialRosterEntryId = '' }) => {
           disabled={isPending || locating || !photoFile}
         >
           <IoLocationOutline size={16} />
-          {locating ? 'Getting location…' : isPending ? 'Saving…' : attendanceType === 'check_in' ? 'Mark Check In' : 'Mark Check Out'}
+          {locating ? 'Getting location…' : isPending ? 'Saving…' : attendanceType === 'check_in' ? 'Check in' : 'Submit report & check out'}
         </Button>
+        </fieldset>
+        </fieldset>
       </form>
+      <div className="mb-4">
+        <Button
+          variant="outline"
+          type="button"
+          onClick={() => {
+            setRequestDate(nextSundayISO());
+            fetchSundayRequests();
+            setSundayModalVisible(true);
+          }}
+          className="w-full justify-between"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-foreground">Manage Sunday Work Requests</span>
+          </div>
+        </Button>
+      </div>
+
 
       <div className="space-y-2">
         {missingReports.length > 0 && (
@@ -561,7 +609,7 @@ const DailyAttendance = ({ initialRosterEntryId = '' }) => {
                 )}
                 {r.report_document_url && (
                   <a href={r.report_document_url} download target="_blank" rel="noreferrer" className="inline-block font-medium text-primary underline">
-                    Download Daily Installation Report
+                    View submitted report
                   </a>
                 )}
                 {r.report_status === 'submitted_late' && <div className="font-semibold text-destructive">Submitted late</div>}

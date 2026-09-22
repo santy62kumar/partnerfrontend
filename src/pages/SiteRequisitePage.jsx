@@ -98,8 +98,8 @@ const SiteRequisitePage = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold font-heading text-foreground">Site Requisite</h1>
-          <p className="text-muted-foreground mt-1">Search and manage BOM for your site</p>
+          <h1 className="text-3xl font-bold font-heading text-foreground">Request materials</h1>
+          <p className="text-muted-foreground mt-1">Find your site’s material list, choose what you need, then review your request.</p>
         </div>
         <div className="flex items-center gap-3">
           <Button
@@ -108,7 +108,7 @@ const SiteRequisitePage = () => {
             className="h-11 px-6"
           >
             <Clock className="w-5 h-5 mr-2" />
-            History
+            Past requests
           </Button>
           <Button
             type="button"

@@ -3,7 +3,9 @@ import { z } from 'zod';
 const phoneSchema = z
   .string()
   .min(1, 'Phone number is required')
-  .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number');
+  .transform((value) => value.replace(/[\s()+-]/g, ''))
+  .transform((value) => value.length === 12 && value.startsWith('91') ? value.slice(2) : value)
+  .pipe(z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'));
 
 const nameSchema = z
   .string()

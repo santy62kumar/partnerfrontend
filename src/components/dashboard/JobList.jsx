@@ -6,7 +6,7 @@ import { JOB_STATUS, JOB_STATUS_LABELS } from '@utils/constants';
 import { Button } from '@components/ui/button';
 import { Card, CardContent } from '@components/ui/card';
 
-const JobList = ({ searchTerm = '' }) => {
+const JobList = ({ searchTerm = '', onClearSearch }) => {
   const { getFilteredJobs, activeFilter, jobs, setActiveFilter } = useDashboardStore();
   const query = searchTerm.trim().toLowerCase();
   const filteredJobs = getFilteredJobs().filter((job) => {
@@ -35,10 +35,16 @@ const JobList = ({ searchTerm = '' }) => {
             No Jobs Found
           </h3>
           <p className="text-sm text-muted-foreground mb-5 max-w-sm">
-            {query
+            {jobs.length === 0
+              ? 'Your assigned jobs will appear here. Contact your supervisor if you are expecting work.'
+              : query
               ? 'No jobs match your search in this status.'
               : `No jobs are currently marked as ${activeFilterLabel.toLowerCase()}.`}
           </p>
+          {query && onClearSearch && <Button variant="outline" onClick={onClearSearch}>Clear search</Button>}
+          {!query && jobs.some((job) => job.status === JOB_STATUS.CREATED) && activeFilter !== JOB_STATUS.CREATED && (
+            <Button variant="outline" onClick={() => setActiveFilter(JOB_STATUS.CREATED)}>Show jobs ready to start</Button>
+          )}
           {!query && activeFilter !== JOB_STATUS.IN_PROGRESS && (
             <Button
               variant="outline"

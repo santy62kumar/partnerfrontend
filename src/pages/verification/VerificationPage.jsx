@@ -5,6 +5,7 @@ import BankVerification from '@components/verification/BankVerification';
 import DocumentUpload from '@components/verification/DocumentUpload';
 import Loader from '@components/common/Loader';
 import { useVerificationStore } from '@store/verificationStore';
+import { useAuthStore } from '@store/authStore';
 import { verificationApi } from '@api/verificationApi';
 import { VERIFICATION_STEPS } from '@utils/constants';
 import Button from '@components/common/Button';
@@ -22,6 +23,8 @@ const VerificationPage = () => {
     isPanVerified,
     isBankVerified,
     isDocumentUploaded,
+    isIdVerified,
+    setDocumentUploaded,
     setCurrentStep,
     setVerificationStatus,
     nextStep,
@@ -40,7 +43,15 @@ const VerificationPage = () => {
     setError('');
     try {
       const status = await verificationApi.getVerificationStatus();
+      const { user, setUser } = useAuthStore.getState();
+      if (!user || user.id !== status.id) return;
       setVerificationStatus(status);
+      setUser({ ...user,
+        is_verified: status.is_verified,
+        is_pan_verified: status.is_pan_verified,
+        is_bank_details_verified: status.is_bank_details_verified,
+        is_id_verified: status.is_id_verified,
+      });
 
       if (status.is_pan_verified !== true) {
         setCurrentStep(VERIFICATION_STEPS.PAN);
@@ -89,10 +100,10 @@ const VerificationPage = () => {
     <div className="max-w-4xl mx-auto animate-fadeIn">
       <div className="mb-8">
         <h1 className="text-3xl font-bold font-heading text-foreground mb-2">
-          Account Verification
+          Set up your account
         </h1>
         <p className="text-muted-foreground">
-          Complete your profile verification to start receiving jobs
+          Verify your PAN and bank account, then send an identity document for approval.
         </p>
       </div>
 
@@ -100,6 +111,8 @@ const VerificationPage = () => {
         currentStep={currentStep}
         isPanVerified={isPanVerified}
         isBankVerified={isBankVerified}
+        isIdVerified={isIdVerified}
+        isDocumentUploaded={isDocumentUploaded}
       />
 
       <div className="mt-8">
@@ -122,6 +135,9 @@ const VerificationPage = () => {
           <DocumentUpload
             canProceed={isPanVerified && isBankVerified}
             isDocumentUploaded={isDocumentUploaded}
+            isIdVerified={isIdVerified}
+            onUploaded={() => setDocumentUploaded(true)}
+            onRefresh={fetchVerificationStatus}
           />
         )}
       </div>

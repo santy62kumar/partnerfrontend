@@ -55,7 +55,7 @@ export const dashboardApi = {
 
   uploadCompletionDocument: generated.uploadCompletionDocument,
 
-  recordAttendance: async ({ jobId, rosterEntryId, latitude, longitude, manualLocation, photoFile, attendanceType, reportFile, sundayReason }) => {
+  recordAttendance: async ({ jobId, rosterEntryId, latitude, longitude, manualLocation, photoFile, attendanceType, reportFile, reportData, progressPhotos = [], sundayReason }) => {
     return generated.recordAttendance({
       job_id: jobId || null,
       roster_entry_id: rosterEntryId || null,
@@ -65,6 +65,8 @@ export const dashboardApi = {
       attendance_type: attendanceType || 'check_in',
       photo: photoFile,
       report_file: reportFile || null,
+      report_data: reportData ? JSON.stringify(reportData) : null,
+      progress_photos: progressPhotos,
       sunday_reason: sundayReason || null,
     });
   },

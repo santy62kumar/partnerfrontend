@@ -21,7 +21,12 @@ const Field = ({ label, children }) => (
   </label>
 );
 
-const ReportSection = ({ title, children }) => (
+const ReportSection = ({ title, children, optional = true }) => optional ? (
+  <details className="rounded-lg border border-border p-3">
+    <summary className="cursor-pointer text-sm font-semibold text-foreground">{title} <span className="font-normal text-muted-foreground">(optional)</span></summary>
+    <div className="mt-3 space-y-2">{children}</div>
+  </details>
+) : (
   <div className="space-y-2">
     <p className="text-sm font-semibold text-foreground">{title}</p>
     {children}
@@ -29,7 +34,7 @@ const ReportSection = ({ title, children }) => (
 );
 
 const MANPOWER_ROWS = [
-  ['IPs', 'num_ips', 'ip_in_time', 'ip_out_time'],
+  ['Partners', 'num_ips', 'ip_in_time', 'ip_out_time'],
   ['Helpers', 'num_helpers', 'helper_in_time', 'helper_out_time'],
   ['Labour', 'num_labour', 'labour_in_time', 'labour_out_time'],
 ];
@@ -49,9 +54,9 @@ const DailyReportForm = ({
   );
 
   return <>
-    <ReportSection title="Key accomplishments">
+    <ReportSection title="What did you finish today?" optional={false}>
       {reportData.accomplishments.map((value, index) => (
-        <Field key={index} label={index === 0 ? 'Accomplishment 1 (required)' : `Accomplishment ${index + 1}`}>
+        <Field key={index} label={index === 0 ? 'Work done (required)' : `More work done ${index + 1}`}>
           <input value={value} required={index === 0} maxLength={LIMITS.action}
             placeholder="What was achieved on site today"
             onChange={(event) => setReportData((current) => ({ ...current, accomplishments: current.accomplishments.map((item, i) => i === index ? event.target.value : item) }))}
@@ -67,7 +72,7 @@ const DailyReportForm = ({
             accomplishments: addReportRow(current.accomplishments, ''),
           }))}
         >
-          + Add accomplishment
+          + Add more work done
         </Button>
       )}
     </ReportSection>
