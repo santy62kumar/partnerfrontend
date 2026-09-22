@@ -147,6 +147,7 @@ const FileUpload = ({
             variant="ghost"
             size="sm"
             onClick={onClear}
+            disabled={disabled}
             aria-label={`Remove ${file.name}`}
             className="ml-2 size-8 p-0 text-muted-foreground hover:text-destructive"
             type="button"

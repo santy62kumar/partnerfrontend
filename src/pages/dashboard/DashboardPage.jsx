@@ -21,7 +21,7 @@ const DashboardPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const toast = useToast();
   const { stats, setJobs, jobs: allJobs, activeFilter } = useDashboardStore();
-  const { data: jobsData, isLoading, error, refetch } = useJobs();
+  const { data: jobsData, isLoading, isFetching, error, refetch } = useJobs();
 
   useEffect(() => {
     if (jobsData) {
@@ -48,7 +48,7 @@ const DashboardPage = () => {
       <Card className="mx-auto max-w-lg border-destructive/30">
         <CardContent className="space-y-4 p-8 text-center">
           <p className="text-sm text-destructive">{getApiErrorMessage(error)}</p>
-          <Button variant="outline" onClick={() => refetch()}>Try again</Button>
+          <Button variant="outline" disabled={isFetching} onClick={() => refetch()}>Try again</Button>
         </CardContent>
       </Card>
     );
@@ -67,7 +67,7 @@ const DashboardPage = () => {
   return (
     <div className="animate-fadeIn space-y-6 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold font-heading text-foreground">
-  Hello, {(user?.first_name?.charAt(0).toUpperCase() + user?.first_name?.slice(1)) || 'User'}!
+  Hello, {user?.first_name ? user.first_name.charAt(0).toUpperCase() + user.first_name.slice(1) : 'User'}!
 </h1>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-1">
@@ -82,7 +82,7 @@ const DashboardPage = () => {
       <TodayCard />
 
       {error ? (
-        <Card className="border-warning/30 bg-warning/10"><CardContent role="alert" className="p-4 text-sm text-warning">Showing saved jobs. {getApiErrorMessage(error)}</CardContent></Card>
+        <Card className="border-warning/30 bg-warning/10"><CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm"><p role="alert">Showing saved jobs. {getApiErrorMessage(error)}</p><Button variant="outline" disabled={isFetching} onClick={() => refetch()}>Try again</Button></CardContent></Card>
       ) : null}
 
       <div className="space-y-4 pt-4">
@@ -103,6 +103,7 @@ const DashboardPage = () => {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
+            aria-label="Search jobs"
             type="search"
             placeholder="Search jobs by name, customer, city or ID..."
             value={searchTerm}
@@ -113,7 +114,7 @@ const DashboardPage = () => {
 
         <Card className="border-border/60 shadow-sm bg-card/40">
           <CardContent className="p-6">
-            <JobList searchTerm={searchTerm} />
+            <JobList searchTerm={searchTerm} onClearSearch={() => setSearchTerm('')} />
           </CardContent>
         </Card>
       </div>

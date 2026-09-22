@@ -11,7 +11,7 @@ import { IoPhonePortraitOutline } from 'react-icons/io5';
 import AuthHeader from '@components/auth/AuthHeader';
 
 const LoginPage = () => {
-  const { login } = useAuth();
+  const { login, phoneNumber } = useAuth();
 
   const {
     register,
@@ -20,6 +20,7 @@ const LoginPage = () => {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(loginSchema),
+    defaultValues: { phoneNumber: phoneNumber || '' },
   });
 
   const onSubmit = async ({ phoneNumber }) => {
@@ -44,9 +45,9 @@ const LoginPage = () => {
               type="tel"
               placeholder="Enter your phone number"
               error={errors.phoneNumber?.message}
-              helperText="Use your 10-digit mobile number"
+              helperText="Enter your mobile number, with or without +91"
               required
-              maxLength={10}
+              maxLength={20}
               autoComplete="tel-national"
               inputMode="numeric"
               leftIcon={<IoPhonePortraitOutline size={20} />}

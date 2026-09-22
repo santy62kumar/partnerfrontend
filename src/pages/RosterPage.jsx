@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3, MapPin } from 'lucide-react';
 import { useRoster } from '@hooks/useQueryHooks';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
@@ -32,7 +33,7 @@ export default function RosterPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><CalendarDays className="h-5 w-5" /></div>
-          <h1 className="text-2xl font-semibold tracking-tight">My roster</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">My schedule</h1>
           <p className="mt-1 text-sm text-muted-foreground">{formatDay(weekStart)} – {formatDay(weekEnd)} · Daily assignments and attendance status.</p>
         </div>
         <div className="flex gap-2">
@@ -77,6 +78,11 @@ export default function RosterPage() {
                             <p className="flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3.5 w-3.5" />{entry.job?.customer_city || 'Location pending'}</p>
                             <StatusBadge tone={ROSTER_STATUS_TONE[entry.status]} className="text-xs">{ROSTER_STATUS_LABEL[entry.status] || entry.status}</StatusBadge>
                             {entry.status === 'blocked' ? <p className="text-xs text-muted-foreground">Attendance opens once this job is started — you can start it from the job page.</p> : null}
+                            <Button asChild variant="outline" size="sm" className="w-full">
+                              <Link to={day === today && ['check_in_open', 'checked_in', 'report_due'].includes(entry.status) ? `/attendance?entry=${entry.id}` : `/dashboard/jobs/${entry.job_id}`}>
+                                {day === today && entry.status === 'check_in_open' ? 'Check in' : day === today && ['checked_in', 'report_due'].includes(entry.status) ? 'Report & check out' : 'Open job'}
+                              </Link>
+                            </Button>
                           </div>
                         ) : <p className="pt-4 text-center text-sm text-muted-foreground">No assignment</p>}
                       </div>

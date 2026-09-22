@@ -52,9 +52,9 @@ const RegisterPage = () => {
               type="tel"
               placeholder="Enter 10-digit phone number"
               error={errors.phoneNumber?.message}
-              helperText="This number will be used for OTP login"
+              helperText="With or without +91. We will send a sign-in code to this number."
               required
-              maxLength={10}
+              maxLength={20}
               autoComplete="tel-national"
               inputMode="numeric"
               {...register('phoneNumber')}

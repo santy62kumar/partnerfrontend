@@ -1,6 +1,7 @@
 // Generate the Daily Installation Report on its own, without marking attendance.
 // Nothing is stored: the PDF comes straight back as a download. Check-out still
 // generates and files its own copy against that day's attendance record.
+import { Link } from "react-router-dom";
 import React, { useState } from "react";
 import Card from "@components/common/Card";
 import Button from "@components/common/Button";
@@ -78,7 +79,11 @@ const DailyReportPage = () => {
   };
 
   return (
-    <Card title="Daily Installation Report">
+    <Card title="Download a report copy">
+      <div className="mb-5 rounded-lg border border-border bg-muted/30 p-4 text-sm space-y-2">
+        <p>This page downloads a copy only. To submit your daily report and finish your visit, use checkout.</p>
+        <Link className="inline-block font-semibold text-primary underline" to={jobId && jobId !== 'manual' ? `/attendance?job=${jobId}` : '/attendance'}>Go to report &amp; check out</Link>
+      </div>
       <form onSubmit={handleGenerate} className="space-y-4">
         {jobsError && (
           <div className="flex flex-wrap items-center gap-3 rounded-lg border border-destructive/40 p-3">

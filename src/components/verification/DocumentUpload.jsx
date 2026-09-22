@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { verificationApi } from '@api/verificationApi';
 import { useFileUpload } from '@hooks/useFileUpload';
 import { useToast } from '@hooks/useToast';
@@ -9,7 +9,7 @@ import { Button } from '@components/ui/button';
 import FileUpload from '@components/common/FileUpload';
 import { getApiErrorMessage } from '@api/apiErrors';
 
-const DocumentUpload = ({ canProceed, isDocumentUploaded }) => {
+const DocumentUpload = ({ canProceed, isDocumentUploaded, isIdVerified, onUploaded, onRefresh }) => {
   const toast = useToast();
   const navigate = useNavigate();
   const {
@@ -21,7 +21,6 @@ const DocumentUpload = ({ canProceed, isDocumentUploaded }) => {
     handleFileSelect,
     clearFile,
   } = useFileUpload();
-  const [uploaded, setUploaded] = useState(isDocumentUploaded);
 
   const handleUpload = async () => {
     if (!file) {
@@ -32,8 +31,8 @@ const DocumentUpload = ({ canProceed, isDocumentUploaded }) => {
     setUploading(true);
     try {
       await verificationApi.uploadDocument(file);
-      toast.success('Document uploaded successfully!');
-      setUploaded(true);
+      toast.success('Document sent for approval');
+      onUploaded();
       clearFile();
     } catch (err) {
       const message = getApiErrorMessage(err);
@@ -41,10 +40,6 @@ const DocumentUpload = ({ canProceed, isDocumentUploaded }) => {
     } finally {
       setUploading(false);
     }
-  };
-
-  const handleSkip = () => {
-    navigate('/dashboard');
   };
 
   const handleContinue = () => {
@@ -67,15 +62,15 @@ const DocumentUpload = ({ canProceed, isDocumentUploaded }) => {
     );
   }
 
-  if (uploaded) {
+  if (isDocumentUploaded || isIdVerified) {
     return (
       <Card className="border-border/80 shadow-sm">
         <CardContent className="pt-8 pb-8 text-center flex flex-col items-center">
           <CheckCircle2 className="mx-auto mb-4 h-16 w-16 text-success" />
-          <h3 className="text-xl font-semibold text-foreground mb-2">Document Uploaded Successfully</h3>
-          <p className="text-muted-foreground mb-6">Your verification steps are complete. You can now access the dashboard.</p>
-          <Button size="lg" onClick={handleContinue}>
-            Continue to Dashboard
+          <h3 className="text-xl font-semibold text-foreground mb-2">{isIdVerified ? 'Your account is ready' : 'Document sent — waiting for approval'}</h3>
+          <p className="text-muted-foreground mb-6">{isIdVerified ? 'You can now view your assigned jobs.' : 'Your administrator needs to review your identity document. You do not need to upload it again. Check here for approval before starting work.'}</p>
+          <Button size="lg" onClick={isIdVerified ? handleContinue : onRefresh}>
+            {isIdVerified ? 'Go to my jobs' : 'Check approval status'}
           </Button>
         </CardContent>
       </Card>
@@ -85,36 +80,23 @@ const DocumentUpload = ({ canProceed, isDocumentUploaded }) => {
   return (
     <Card className="border-border/80 shadow-sm hover:shadow-md transition-all">
       <CardHeader>
-        <CardTitle className="text-xl">Upload Educational Documents</CardTitle>
+        <CardTitle className="text-xl">Send your identity document</CardTitle>
         <CardDescription>
-          Upload your educational certificates or degrees. This step is optional but recommended for better opportunities.
+          Upload a clear identity document for your administrator to review. Approval is required before you can access jobs.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="bg-warning/10 border border-warning/25 rounded-lg p-3 mb-6">
-          <p className="text-xs text-warning-foreground font-medium">
-            Optional Step: You can skip this step and complete it later from your profile.
-          </p>
-        </div>
-
         <FileUpload
           file={file}
           preview={preview}
           onFileSelect={handleFileSelect}
           onClear={clearFile}
           error={error}
-          label="Educational Certificate"
+          label="Identity document"
+          disabled={uploading}
         />
 
         <div className="flex gap-3 mt-8">
-          <Button
-            variant="outline"
-            size="lg"
-            className="w-full"
-            onClick={handleSkip}
-          >
-            Skip for Now
-          </Button>
           <Button
             variant="default"
             size="lg"
@@ -122,7 +104,7 @@ const DocumentUpload = ({ canProceed, isDocumentUploaded }) => {
             disabled={!file || uploading}
             onClick={handleUpload}
           >
-            {uploading ? "Uploading..." : "Upload & Continue"}
+            {uploading ? "Sending..." : "Send for approval"}
           </Button>
         </div>
 

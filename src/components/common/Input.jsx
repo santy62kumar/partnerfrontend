@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useId } from 'react';
 
 const Input = forwardRef(
   (
@@ -17,7 +17,8 @@ const Input = forwardRef(
     },
     ref
   ) => {
-    const inputId = props.id || props.name;
+    const generatedId = useId();
+    const inputId = props.id || props.name || generatedId;
     const errorId = inputId ? `${inputId}-error` : undefined;
     const helperTextId = inputId ? `${inputId}-helper` : undefined;
     const errorClass = error ? 'ds-input-error' : '';
@@ -51,6 +52,7 @@ const Input = forwardRef(
             id={inputId}
             type={type}
             disabled={disabled}
+            required={required}
             className={`ds-input ${errorClass} ${paddingLeft} ${paddingRight} ${className}`}
             aria-invalid={!!error}
             aria-describedby={describedBy}

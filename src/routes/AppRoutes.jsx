@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import PrivateRoute from './PrivateRoute';
 import PublicRoute from './PublicRoute';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import Button from '@components/common/Button';
+import Card from '@components/common/Card';
 
 import { authApi } from '../api/authApi';
 import { useAuthStore } from '@store/authStore';
@@ -26,45 +28,39 @@ const RosterPage = React.lazy(() => import('../pages/RosterPage'));
 
 
 function AppRoutes() {
+  const [sessionError, setSessionError] = useState(false);
+  const [sessionAttempt, setSessionAttempt] = useState(0);
+
   useEffect(() => {
-    const hydrateSession = async () => {
-      const { setUser, clearAuth, hydrateUser } = useAuthStore.getState();
+    let active = true;
+    const { setUser, clearAuth, clearLegacyStorage } = useAuthStore.getState();
+    clearLegacyStorage();
+    // /me both verifies the session and returns the profile: one request, no cached identity.
+    authApi.me().then((user) => {
+      if (active) setUser(user);
+    }).catch((error) => {
+      if (!active) return;
+      if (error.status === 401 || error.status === 403) clearAuth();
+      else setSessionError(true);
+    });
+    return () => { active = false; };
+  }, [sessionAttempt]);
 
-      // Phase 1: Instant restore from cache (synchronous)
-      const cachedUser = hydrateUser();
-
-      // Background verify — refresh the profile silently
-      const verifyInBackground = async () => {
-        try {
-          const verifyRes = await authApi.verifyToken();
-          if (verifyRes.valid) {
-            setUser(await authApi.me());
-          } else {
-            clearAuth();
-          }
-        } catch {
-          clearAuth();
-        }
-      };
-
-      if (cachedUser) {
-        // UI is already showing — verify silently (don't block)
-        verifyInBackground();
-      } else {
-        // No cache (first login) — must wait, with timeout
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Session check timed out')), 6000)
-        );
-        try {
-          await Promise.race([verifyInBackground(), timeoutPromise]);
-        } catch {
-          clearAuth();
-        }
-      }
-    };
-
-    hydrateSession();
-  }, []);
+  if (sessionError) {
+    return (
+      <div className="auth-page">
+        <Card className="auth-container" padding="p-6 space-y-4">
+          <div role="alert">
+          <h1 className="text-xl font-semibold">Could not connect</h1>
+          <p>Check your internet connection, then try again. You do not need to register again.</p>
+          </div>
+          <Button onClick={() => { setSessionError(false); setSessionAttempt((attempt) => attempt + 1); }}>
+            Try again
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <BrowserRouter>

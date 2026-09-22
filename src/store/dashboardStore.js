@@ -121,6 +121,8 @@ export const useDashboardStore = create((set, get) => ({
   resetDashboard: () => set({
     jobs: [],
     selectedJob: null,
+    lastFetched: null,
+    jobDetailCache: {},
     activeFilter: JOB_STATUS.IN_PROGRESS,
     stats: {
       completedJobs: 0,
