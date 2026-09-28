@@ -104,7 +104,7 @@ apiClient.interceptors.response.use(
       if (status === 401 && originalRequest && !originalRequest._retry && !originalRequest.url?.includes('/auth/login') && !originalRequest.url?.includes('/auth/refresh-token') && !originalRequest.url?.includes('/auth/verify-otp')) {
         originalRequest._retry = true;
         try {
-          refreshPromise ??= axios.post(`${API_BASE_URL}/auth/refresh-token`, {}, {
+          refreshPromise ??= axios.post(`${API_BASE_URL}/auth/refresh-token`, undefined, {
             withCredentials: true, timeout: 30000,
           }).finally(() => { refreshPromise = null; });
           await refreshPromise;
